@@ -1,0 +1,222 @@
+{
+    "info": {
+      "title": "Minha API",
+      "description": "Documentação da API",
+      "version": "1.0.0"
+    },
+    "host": "localhost:3000",
+    "schemes": ["http"],
+    "paths": {
+      "/users/login": {
+        "post": {
+          "summary": "Login",
+          "description": "User login",
+          "parameters": [],
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "email": { "type": "string" },
+                    "password": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": { "description": "Successful login" },
+            "401": { "description": "Invalid credentials" }
+          }
+        }
+      },
+      "/persons": {
+        "post": {
+          "summary": "Cria uma nova pessoa",
+          "tags": ["Persons"],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "fullName": { "type": "string" },
+                    "shortName": { "type": "string" },
+                    "email": { "type": "string" },
+                    "divisionId": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": { "description": "Pessoa criada" },
+            "400": { "description": "Campos obrigatórios não preenchidos" }
+          }
+        },
+        "get": {
+          "summary": "Lista todas as pessoas com paginação",
+          "tags": ["Persons"],
+          "parameters": [
+            { "in": "query", "name": "page", "schema": { "type": "integer" }, "description": "Número da página" },
+            { "in": "query", "name": "limit", "schema": { "type": "integer" }, "description": "Número de itens por página" }
+          ],
+          "responses": {
+            "200": { "description": "Lista de pessoas" }
+          }
+        }
+      },
+      "/persons/{id}": {
+        "get": {
+          "summary": "Obtém uma pessoa pelo ID",
+          "tags": ["Persons"],
+          "parameters": [
+            { "in": "path", "name": "id", "required": true, "schema": { "type": "integer" } }
+          ],
+          "responses": {
+            "200": { "description": "Pessoa encontrada" },
+            "404": { "description": "Pessoa não encontrada" }
+          }
+        },
+        "put": {
+          "summary": "Atualiza uma pessoa pelo ID",
+          "tags": ["Persons"],
+          "parameters": [
+            { "in": "path", "name": "id", "required": true, "schema": { "type": "integer" } }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "fullName": { "type": "string" },
+                    "shortName": { "type": "string" },
+                    "email": { "type": "string" },
+                    "divisionId": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": { "description": "Pessoa atualizada" },
+            "400": { "description": "Campos obrigatórios não preenchidos" },
+            "404": { "description": "Pessoa não encontrada" }
+          }
+        },
+        "delete": {
+          "summary": "Remove uma pessoa pelo ID",
+          "tags": ["Persons"],
+          "parameters": [
+            { "in": "path", "name": "id", "required": true, "schema": { "type": "integer" } }
+          ],
+          "responses": {
+            "204": { "description": "Pessoa removida" },
+            "404": { "description": "Pessoa não encontrada" }
+          }
+        }
+      },
+      "/persons/{id}/payments": {
+        "post": {
+          "summary": "Registra ou atualiza o pagamento mensal de uma pessoa",
+          "description": "Registra ou atualiza se a mensalidade do integrante foi paga no mês/ano informados.",
+          "tags": ["Persons"],
+          "parameters": [
+            { "in": "path", "name": "id", "required": true, "schema": { "type": "integer" } }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "year": { "type": "integer", "example": 2026 },
+                    "month": { "type": "integer", "example": 1 },
+                    "paidOnTime": { "type": "boolean", "example": true },
+                    "paidAt": { "type": "string", "format": "date-time", "example": "2026-01-15T10:00:00Z" }
+                  },
+                  "required": ["year", "month"]
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Pagamento registrado",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "integer", "example": 123 },
+                      "personId": { "type": "integer", "example": 1 },
+                      "year": { "type": "integer", "example": 2026 },
+                      "month": { "type": "integer", "example": 1 },
+                      "paidOnTime": { "type": "boolean", "example": true },
+                      "paidAt": { "type": "string", "format": "date-time", "example": "2026-01-15T10:00:00Z" }
+                    }
+                  }
+                }
+              }
+            },
+            "400": { "description": "Campos inválidos" },
+            "404": {
+              "description": "Pessoa não encontrada",
+              "content": {
+                "application/json": {
+                  "schema": { "type": "object", "properties": { "error": { "type": "string" } } },
+                  "examples": { "notFound": { "value": { "error": "Pessoa não encontrada." } } }
+                }
+              }
+            }
+          }
+        },
+        "get": {
+          "summary": "Lista pagamentos mensais de uma pessoa",
+          "description": "Retorna os registros de pagamento da pessoa; opcionalmente filtre por `year`.",
+          "tags": ["Persons"],
+          "parameters": [
+            { "in": "path", "name": "id", "required": true, "schema": { "type": "integer" } },
+            { "in": "query", "name": "year", "schema": { "type": "integer" }, "description": "Filtrar por ano", "example": 2026 }
+          ],
+          "responses": {
+            "200": {
+              "description": "Lista de pagamentos",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "integer", "example": 1 },
+                        "personId": { "type": "integer", "example": 1 },
+                        "year": { "type": "integer", "example": 2026 },
+                        "month": { "type": "integer", "example": 1 },
+                        "paidOnTime": { "type": "boolean", "example": true },
+                        "paidAt": { "type": "string", "format": "date-time", "example": "2026-01-15T10:00:00Z" }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Pessoa não encontrada",
+              "content": {
+                "application/json": {
+                  "schema": { "type": "object", "properties": { "error": { "type": "string" } } },
+                  "examples": { "notFound": { "value": { "error": "Pessoa não encontrada." } } }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
