@@ -1,4 +1,4 @@
-# Social Manager API
+# 18 MC Admin API
 
 Este projeto é uma aplicação Node.js que serve como base para desenvolvimento de aplicações web. Ele inclui uma estrutura básica com componentes reutilizáveis, páginas e funções utilitárias.
 
