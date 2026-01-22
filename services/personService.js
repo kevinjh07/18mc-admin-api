@@ -3,6 +3,7 @@ const Division = require('../models/Division');
 const Regional = require('../models/Regional');
 const MonthlyPayment = require('../models/MonthlyPayment');
 const PersonAlreadyExistsError = require('../exceptions/PersonAlreadyExistsError');
+const PaymentAlreadyExistsError = require('../exceptions/PaymentAlreadyExistsError');
 const { Op } = require('sequelize');
 
 const createPerson = async (fullName, shortName, divisionId, hierarchyLevel, isActive) => {
@@ -102,8 +103,7 @@ const recordMonthlyPayment = async (personId, year, month, paidOnTime, paidAt = 
 
   const existing = await MonthlyPayment.findOne({ where: { personId, year, month } });
   if (existing) {
-    await existing.update({ paidOnTime, paidAt });
-    return existing;
+    throw new PaymentAlreadyExistsError('Já existe um pagamento mensal para este integrante no ano e mês especificados.');
   }
 
   const created = await MonthlyPayment.create({ personId, year, month, paidOnTime, paidAt });

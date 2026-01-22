@@ -1,5 +1,6 @@
 const PersonService = require('../services/personService');
 const PersonAlreadyExistsError = require('../exceptions/PersonAlreadyExistsError');
+const PaymentAlreadyExistsError = require('../exceptions/PaymentAlreadyExistsError');
 const { logger } = require('sequelize/lib/utils/logger');
 
 const createPerson = async (req, res) => {
@@ -98,6 +99,9 @@ const addMonthlyPayment = async (req, res) => {
   } catch (error) {
     if (error.message && error.message.includes('Pessoa não encontrada')) {
       return res.status(404).json({ error: error.message });
+    }
+    if (error instanceof PaymentAlreadyExistsError) {
+      return res.status(409).json({ error: error.message });
     }
     res.status(500).send('Error recording monthly payment');
   }

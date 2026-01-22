@@ -14,6 +14,7 @@ const Person = require('../models/Person');
 const Division = require('../models/Division');
 const Regional = require('../models/Regional');
 const MonthlyPayment = require('../models/MonthlyPayment');
+const PaymentAlreadyExistsError = require('../exceptions/PaymentAlreadyExistsError');
 
 jest.mock('../models/Person');
 jest.mock('../models/Division');
@@ -76,21 +77,19 @@ describe('Person Service', () => {
       expect(result).toEqual(mockCreated);
     });
 
-    it('should update an existing monthly payment', async () => {
+    it('should throw PaymentAlreadyExistsError when payment already exists', async () => {
       const personId = 1;
       const year = 2026;
       const month = 2;
       const paidOnTime = false;
       const mockPerson = { id: personId };
-      const mockExisting = { id: 101, personId, year, month, paidOnTime: true, update: jest.fn().mockResolvedValue(true) };
+      const mockExisting = { id: 101, personId, year, month, paidOnTime: true };
 
       Person.findByPk.mockResolvedValue(mockPerson);
       MonthlyPayment.findOne.mockResolvedValue(mockExisting);
 
-      const result = await recordMonthlyPayment(personId, year, month, paidOnTime);
+      await expect(recordMonthlyPayment(personId, year, month, paidOnTime)).rejects.toThrow(PaymentAlreadyExistsError);
       expect(MonthlyPayment.findOne).toHaveBeenCalledWith({ where: { personId, year, month } });
-      expect(mockExisting.update).toHaveBeenCalledWith({ paidOnTime, paidAt: null });
-      expect(result).toEqual(mockExisting);
     });
 
     it('should return null when getting payments for non-existent person', async () => {

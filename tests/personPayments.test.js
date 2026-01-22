@@ -48,6 +48,18 @@ describe('Person Payments Endpoints', () => {
       expect(res.statusCode).toEqual(400);
       expect(res.body).toHaveProperty('errors');
     });
+
+    it('should return 409 when payment already exists', async () => {
+      const PaymentAlreadyExistsError = require('../exceptions/PaymentAlreadyExistsError');
+      PersonService.recordMonthlyPayment.mockRejectedValue(new PaymentAlreadyExistsError('Já existe um pagamento mensal para este integrante no ano e mês especificados.'));
+
+      const res = await request(app)
+        .post('/persons/1/payments')
+        .send({ year: 2026, month: 1, paidOnTime: true });
+
+      expect(res.statusCode).toEqual(409);
+      expect(res.body).toEqual({ error: 'Já existe um pagamento mensal para este integrante no ano e mês especificados.' });
+    });
   });
 
   describe('GET /persons/:id/payments', () => {
