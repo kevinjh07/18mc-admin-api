@@ -12,12 +12,14 @@ const chartController = require('../controllers/chartController');
  *       - in: query
  *         name: startDate
  *         schema:
- *           type: date
+ *           type: string
+ *           format: date
  *         description: Data inicial
  *       - in: query
  *         name: endDate
  *         schema:
- *           type: date
+ *           type: string
+ *           format: date
  *         description: Data final
  *       - in: query
  *         name: regionalId
@@ -27,12 +29,25 @@ const chartController = require('../controllers/chartController');
  *     responses:
  *       200:
  *         description: Quantidade de ações social por divisão
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   name:
+ *                     type: string
+ *                   value:
+ *                     type: integer
  */
 router.get('/', chartController.getSocialActionCountByDateRange);
 
 /**
  * @swagger
- * /socialActions:
+ * /socialActions/action-type:
  *   get:
  *     summary: Lista divisões e quantidade de ações sociais por período e regional dividido por interno e externo
  *     tags: [Charts]
@@ -40,12 +55,14 @@ router.get('/', chartController.getSocialActionCountByDateRange);
  *       - in: query
  *         name: startDate
  *         schema:
- *           type: date
+ *           type: string
+ *           format: date
  *         description: Data inicial
  *       - in: query
  *         name: endDate
  *         schema:
- *           type: date
+ *           type: string
+ *           format: date
  *         description: Data final
  *       - in: query
  *         name: regionalId
@@ -55,6 +72,26 @@ router.get('/', chartController.getSocialActionCountByDateRange);
  *     responses:
  *       200:
  *         description: Quantidade de ações social por divisão
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   name:
+ *                     type: string
+ *                   series:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                       properties:
+ *                         name:
+ *                           type: string
+ *                         value:
+ *                           type: integer
  */
 router.get(
   '/action-type',
@@ -76,16 +113,33 @@ router.get(
  *       - in: query
  *         name: startDate
  *         schema:
- *           type: date
+ *           type: string
+ *           format: date
  *         description: Data inicial
  *       - in: query
  *         name: endDate
  *         schema:
- *           type: date
+ *           type: string
+ *           format: date
  *         description: Data final
  *     responses:
  *       200:
  *         description: Lista de participantes em ações sociais
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   personId:
+ *                     type: integer
+ *                   name:
+ *                     type: string
+ *                   divisionName:
+ *                     type: string
+ *                   value:
+ *                     type: integer
  */
 router.get(
   '/person-division',

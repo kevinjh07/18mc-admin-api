@@ -66,6 +66,39 @@ router.post(
  *     responses:
  *       200:
  *         description: Pessoa encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 fullName:
+ *                   type: string
+ *                 shortName:
+ *                   type: string
+ *                 divisionId:
+ *                   type: integer
+ *                 hierarchyLevel:
+ *                   type: string
+ *                 isActive:
+ *                   type: boolean
+ *                 Division:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     name:
+ *                       type: string
+ *                     Regional:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                 createdAt:
+ *                   type: string
+ *                 updatedAt:
+ *                   type: string
  *       404:
  *         description: Pessoa não encontrada
  */
@@ -88,9 +121,51 @@ router.get('/:id', personController.getPersonById);
  *         schema:
  *           type: integer
  *         description: Número de itens por página
+ *       - in: query
+ *         name: divisionId
+ *         schema:
+ *           type: integer
+ *         description: ID da divisão para filtrar
  *     responses:
  *       200:
  *         description: Lista de pessoas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalItems:
+ *                   type: integer
+ *                 totalPages:
+ *                   type: integer
+ *                 currentPage:
+ *                   type: integer
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       fullName:
+ *                         type: string
+ *                       shortName:
+ *                         type: string
+ *                       divisionId:
+ *                         type: integer
+ *                       hierarchyLevel:
+ *                         type: string
+ *                       isActive:
+ *                         type: boolean
+ *                       Division:
+ *                         type: object
+ *                         properties:
+ *                           name:
+ *                             type: string
+ *                       createdAt:
+ *                         type: string
+ *                       updatedAt:
+ *                         type: string
  */
 router.get('/', personController.getAllPersons);
 
@@ -166,11 +241,22 @@ router.put(
  *       - in: query
  *         name: isActive
  *         schema:
- *           type: integer
- *         description: Situação do integrante
+ *           type: string
+ *         description: Situação do integrante (true/false)
  *     responses:
  *       200:
  *         description: Lista de integrantes
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   shortName:
+ *                     type: string
  *       404:
  *         description: Nenhum integrante encontrado para a divisão
  */
@@ -247,6 +333,30 @@ router.post(
  *     responses:
  *       200:
  *         description: Lista de pagamentos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   personId:
+ *                     type: integer
+ *                   year:
+ *                     type: integer
+ *                   month:
+ *                     type: integer
+ *                   paidOnTime:
+ *                     type: boolean
+ *                   paidAt:
+ *                     type: string
+ *                     format: date-time
+ *                   createdAt:
+ *                     type: string
+ *                   updatedAt:
+ *                     type: string
  *       404:
  *         description: Pessoa não encontrada
  */

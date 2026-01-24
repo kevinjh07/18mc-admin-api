@@ -29,6 +29,89 @@ const reportController = require('../controllers/reportController');
  *     responses:
  *       200:
  *         description: Relatório gerado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   divisionId:
+ *                     type: integer
+ *                   divisionName:
+ *                     type: string
+ *                   socialActions:
+ *                     type: object
+ *                     properties:
+ *                       internal:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: integer
+ *                             name:
+ *                               type: string
+ *                             date:
+ *                               type: string
+ *                               format: date
+ *                             participants:
+ *                               type: array
+ *                               items:
+ *                                 type: object
+ *                                 properties:
+ *                                   id:
+ *                                     type: integer
+ *                                   shortName:
+ *                                     type: string
+ *                                   hierarchyLevel:
+ *                                     type: string
+ *                       external:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: integer
+ *                             name:
+ *                               type: string
+ *                             date:
+ *                               type: string
+ *                               format: date
+ *                             participants:
+ *                               type: array
+ *                               items:
+ *                                 type: object
+ *                                 properties:
+ *                                   id:
+ *                                     type: integer
+ *                                   shortName:
+ *                                     type: string
+ *                                   hierarchyLevel:
+ *                                     type: string
+ *                       fundraising:
+ *                         type: array
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: integer
+ *                             name:
+ *                               type: string
+ *                             date:
+ *                               type: string
+ *                               format: date
+ *                             participants:
+ *                               type: array
+ *                               items:
+ *                                 type: object
+ *                                 properties:
+ *                                   id:
+ *                                     type: integer
+ *                                   shortName:
+ *                                     type: string
+ *                                   hierarchyLevel:
+ *                                     type: string
  *       500:
  *         description: Erro ao gerar relatório
  */

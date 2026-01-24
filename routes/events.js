@@ -102,6 +102,55 @@ router.post(
  *     responses:
  *       200:
  *         description: Evento encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 title:
+ *                   type: string
+ *                 date:
+ *                   type: string
+ *                   format: date
+ *                 description:
+ *                   type: string
+ *                 divisionId:
+ *                   type: integer
+ *                 eventType:
+ *                   type: string
+ *                   enum: [social_action, other, poll]
+ *                 actionType:
+ *                   type: string
+ *                   enum: [internal, external, fundraising]
+ *                 Division:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     name:
+ *                       type: string
+ *                     Regional:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                         commandId:
+ *                           type: integer
+ *                 People:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       shortName:
+ *                         type: string
+ *                 createdAt:
+ *                   type: string
+ *                 updatedAt:
+ *                   type: string
  *       404:
  *         description: Evento não encontrado
  */
@@ -143,6 +192,48 @@ router.get('/:id', eventController.getEventById);
  *     responses:
  *       200:
  *         description: Lista de eventos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalItems:
+ *                   type: integer
+ *                 totalPages:
+ *                   type: integer
+ *                 currentPage:
+ *                   type: integer
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       title:
+ *                         type: string
+ *                       date:
+ *                         type: string
+ *                         format: date
+ *                       description:
+ *                         type: string
+ *                       divisionId:
+ *                         type: integer
+ *                       eventType:
+ *                         type: string
+ *                       actionType:
+ *                         type: string
+ *                       Division:
+ *                         type: object
+ *                         properties:
+ *                           name:
+ *                             type: string
+ *                           regionalId:
+ *                             type: integer
+ *                       createdAt:
+ *                         type: string
+ *                       updatedAt:
+ *                         type: string
  */
 router.get(
   '/',

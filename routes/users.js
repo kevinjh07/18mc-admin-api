@@ -73,6 +73,9 @@ const router = express.Router();
  *                 email:
  *                   type: string
  *                   description: Email do usuário.
+ *                 isActive:
+ *                   type: boolean
+ *                   description: Status do usuário.
  *       404:
  *         description: Usuário não encontrado.
  *       500:

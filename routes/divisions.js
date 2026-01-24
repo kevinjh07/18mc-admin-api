@@ -68,6 +68,28 @@ router.post(
  *     responses:
  *       200:
  *         description: Divisão encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 name:
+ *                   type: string
+ *                 regionalId:
+ *                   type: integer
+ *                 Regional:
+ *                   type: object
+ *                   properties:
+ *                     name:
+ *                       type: string
+ *                     commandId:
+ *                       type: integer
+ *                 createdAt:
+ *                   type: string
+ *                 updatedAt:
+ *                   type: string
  *       404:
  *         description: Divisão não encontrada
  */
@@ -90,9 +112,40 @@ router.get('/:id', divisionController.getDivisionById);
  *         schema:
  *           type: integer
  *         description: Número de itens por página
+ *       - in: query
+ *         name: regionalId
+ *         schema:
+ *           type: integer
+ *         description: ID da regional para filtrar
  *     responses:
  *       200:
  *         description: Lista de divisões
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalItems:
+ *                   type: integer
+ *                 totalPages:
+ *                   type: integer
+ *                 currentPage:
+ *                   type: integer
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       name:
+ *                         type: string
+ *                       regionalId:
+ *                         type: integer
+ *                       createdAt:
+ *                         type: string
+ *                       updatedAt:
+ *                         type: string
  */
 router.get('/', divisionController.getAllDivisions);
 

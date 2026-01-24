@@ -86,6 +86,17 @@ router.post(
  *                 commandId:
  *                   type: integer
  *                   description: ID do comando associado.
+ *                 command:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     name:
+ *                       type: string
+ *                 createdAt:
+ *                   type: string
+ *                 updatedAt:
+ *                   type: string
  *       404:
  *         description: Regional não encontrada.
  */
@@ -120,19 +131,39 @@ router.get('/:id', regionalController.getRegionalById);
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: integer
- *                     description: ID da regional.
- *                   name:
- *                     type: string
- *                     description: Nome da regional.
- *                   commandId:
- *                     type: integer
- *                     description: ID do comando associado.
+ *               type: object
+ *               properties:
+ *                 totalItems:
+ *                   type: integer
+ *                 totalPages:
+ *                   type: integer
+ *                 currentPage:
+ *                   type: integer
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         description: ID da regional.
+ *                       name:
+ *                         type: string
+ *                         description: Nome da regional.
+ *                       commandId:
+ *                         type: integer
+ *                         description: ID do comando associado.
+ *                       command:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: integer
+ *                           name:
+ *                             type: string
+ *                       createdAt:
+ *                         type: string
+ *                       updatedAt:
+ *                         type: string
  */
 router.get(
   '/',
