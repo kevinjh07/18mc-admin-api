@@ -1,22 +1,22 @@
 const Division = require('../models/Division');
-const SocialAction = require('../models/SocialAction');
+const Event = require('../models/Event');
 const Person = require('../models/Person');
 const { Op } = require('sequelize');
 
 const generateDivisionReport = async (regionalId, startDate, endDate) => {
-  const actionWhere = {};
+  const eventWhere = { eventType: 'social_action' };
   const divisionWhere = regionalId ? { regionalId } : {};
 
   if (startDate) {
-    actionWhere.date = { [Op.gte]: new Date(startDate) };
+    eventWhere.date = { [Op.gte]: new Date(startDate) };
   }
 
   if (endDate) {
-    actionWhere.date = { ...actionWhere.date, [Op.lte]: new Date(endDate) };
+    eventWhere.date = { ...eventWhere.date, [Op.lte]: new Date(endDate) };
   }
 
-  const socialActions = await SocialAction.findAll({
-    where: actionWhere,
+  const events = await Event.findAll({
+    where: eventWhere,
     include: [
       {
         model: Division,
@@ -35,12 +35,12 @@ const generateDivisionReport = async (regionalId, startDate, endDate) => {
 
   const divisionMap = {};
 
-  socialActions.forEach((action) => {
-    const divisionId = action.divisionId;
+  events.forEach((event) => {
+    const divisionId = event.divisionId;
     if (!divisionMap[divisionId]) {
       divisionMap[divisionId] = {
-        'divisionId': action.Division.id,
-        'divisionName': action.Division.name,
+        'divisionId': event.Division.id,
+        'divisionName': event.Division.name,
         socialActions: {
           internal: [],
           external: [],
@@ -50,20 +50,22 @@ const generateDivisionReport = async (regionalId, startDate, endDate) => {
     }
 
     const actionData = {
-      id: action.id,
-      name: action.title,
-      date: action.date,
-      participants: action.People.map((participant) => ({
+      id: event.id,
+      name: event.title,
+      date: event.date,
+      participants: event.People.map((participant) => ({
         'id': participant.id,
         'shortName': participant.shortName,
         'hierarchyLevel': participant.hierarchyLevel,
       })),
     };
 
-    if (action.actionType === 'internal') {
+    if (event.actionType === 'internal') {
       divisionMap[divisionId].socialActions.internal.push(actionData);
-    } else {
+    } else if (event.actionType === 'external') {
       divisionMap[divisionId].socialActions.external.push(actionData);
+    } else if (event.actionType === 'fundraising') {
+      divisionMap[divisionId].socialActions.fundraising.push(actionData);
     }
   });
 

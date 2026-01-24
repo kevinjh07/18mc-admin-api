@@ -4,7 +4,7 @@ jest.mock('../models/Division', () => ({
   findAll: jest.fn(),
 }));
 jest.mock('../models/Regional', () => ({}));
-jest.mock('../models/SocialAction', () => ({
+jest.mock('../models/Event', () => ({
   findAll: jest.fn(),
 }));
 jest.mock('../config/database', () => ({
@@ -12,13 +12,13 @@ jest.mock('../config/database', () => ({
 }));
 
 const {
-  getSocialActionCountByDateRange,
-  getSocialActionInternalExternalCountByDateRange,
-  getSocialActionsByPersonAndDivisionRaw,
+  getEventCountByDateRange,
+  getEventInternalExternalCountByDateRange,
+  getEventsByPersonAndDivisionRaw,
 } = require('../services/chartService');
 const Division = require('../models/Division');
 const Regional = require('../models/Regional');
-const SocialAction = require('../models/SocialAction');
+const Event = require('../models/Event');
 const sequelize = require('../config/database');
 
 describe('Chart Service', () => {
@@ -26,21 +26,21 @@ describe('Chart Service', () => {
     jest.clearAllMocks();
   });
 
-  describe('getSocialActionCountByDateRange', () => {
-    it('should return divisions with action counts sorted by value and name', async () => {
+  describe('getEventCountByDateRange', () => {
+    it('should return divisions with event counts sorted by value and name', async () => {
       const mockDivisions = [
         { id: 1, name: 'Division A', Regional: { id: 1 } },
         { id: 2, name: 'Division B', Regional: { id: 1 } },
       ];
-      const mockSocialActions = [
+      const mockEvents = [
         { divisionId: 1, get: jest.fn(() => 5) },
         { divisionId: 2, get: jest.fn(() => 3) },
       ];
 
       Division.findAll.mockResolvedValue(mockDivisions);
-      SocialAction.findAll.mockResolvedValue(mockSocialActions);
+      Event.findAll.mockResolvedValue(mockEvents);
 
-      const result = await getSocialActionCountByDateRange('2026-01-01', '2026-01-31', 1);
+      const result = await getEventCountByDateRange('2026-01-01', '2026-01-31', 1);
 
       expect(Division.findAll).toHaveBeenCalledWith({
         where: { regionalId: 1 },
@@ -50,10 +50,10 @@ describe('Chart Service', () => {
           attributes: ['id'],
         },
       });
-      expect(SocialAction.findAll).toHaveBeenCalledWith({
+      expect(Event.findAll).toHaveBeenCalledWith({
         attributes: [
           'divisionId',
-          expect.any(Array), // [Sequelize.fn('COUNT', Sequelize.col('SocialAction.id')), 'actionCount']
+          expect.any(Array), // [Sequelize.fn('COUNT', Sequelize.col('Event.id')), 'actionCount']
         ],
         where: {
           date: expect.any(Object), // { [Op.between]: [startDate, endDate] }
@@ -66,16 +66,16 @@ describe('Chart Service', () => {
       ]);
     });
 
-    it('should return divisions with zero counts if no actions', async () => {
+    it('should return divisions with zero counts if no events', async () => {
       const mockDivisions = [
         { id: 1, name: 'Division A', Regional: { id: 1 } },
       ];
-      const mockSocialActions = [];
+      const mockEvents = [];
 
       Division.findAll.mockResolvedValue(mockDivisions);
-      SocialAction.findAll.mockResolvedValue(mockSocialActions);
+      Event.findAll.mockResolvedValue(mockEvents);
 
-      const result = await getSocialActionCountByDateRange('2026-01-01', '2026-01-31', 1);
+      const result = await getEventCountByDateRange('2026-01-01', '2026-01-31', 1);
 
       expect(result).toEqual([
         { id: 1, name: 'Division A', value: 0 },
@@ -83,22 +83,22 @@ describe('Chart Service', () => {
     });
   });
 
-  describe('getSocialActionInternalExternalCountByDateRange', () => {
+  describe('getEventInternalExternalCountByDateRange', () => {
     it('should return divisions with series counts sorted by total and name', async () => {
       const mockDivisions = [
         { id: 1, name: 'Division A', Regional: { id: 1 } },
         { id: 2, name: 'Division B', Regional: { id: 1 } },
       ];
-      const mockSocialActions = [
+      const mockEvents = [
         { divisionId: 1, actionType: 'internal', get: jest.fn(() => 2) },
         { divisionId: 1, actionType: 'external', get: jest.fn(() => 3) },
         { divisionId: 2, actionType: 'fundraising', get: jest.fn(() => 1) },
       ];
 
       Division.findAll.mockResolvedValue(mockDivisions);
-      SocialAction.findAll.mockResolvedValue(mockSocialActions);
+      Event.findAll.mockResolvedValue(mockEvents);
 
-      const result = await getSocialActionInternalExternalCountByDateRange('2026-01-01', '2026-01-31', 1);
+      const result = await getEventInternalExternalCountByDateRange('2026-01-01', '2026-01-31', 1);
 
       expect(result).toEqual([
         {
@@ -122,16 +122,16 @@ describe('Chart Service', () => {
       ]);
     });
 
-    it('should return divisions with zero series if no actions', async () => {
+    it('should return divisions with zero series if no events', async () => {
       const mockDivisions = [
         { id: 1, name: 'Division A', Regional: { id: 1 } },
       ];
-      const mockSocialActions = [];
+      const mockEvents = [];
 
       Division.findAll.mockResolvedValue(mockDivisions);
-      SocialAction.findAll.mockResolvedValue(mockSocialActions);
+      Event.findAll.mockResolvedValue(mockEvents);
 
-      const result = await getSocialActionInternalExternalCountByDateRange('2026-01-01', '2026-01-31', 1);
+      const result = await getEventInternalExternalCountByDateRange('2026-01-01', '2026-01-31', 1);
 
       expect(result).toEqual([
         {
@@ -147,15 +147,15 @@ describe('Chart Service', () => {
     });
   });
 
-  describe('getSocialActionsByPersonAndDivisionRaw', () => {
-    it('should return social actions by person and division', async () => {
+  describe('getEventsByPersonAndDivisionRaw', () => {
+    it('should return events by person and division', async () => {
       const mockResults = [
         { personId: 1, name: 'Person A', divisionName: 'Division A', value: 5 },
       ];
 
       sequelize.query.mockResolvedValue(mockResults);
 
-      const result = await getSocialActionsByPersonAndDivisionRaw(1, '2026-01-01', '2026-01-31');
+      const result = await getEventsByPersonAndDivisionRaw(1, '2026-01-01', '2026-01-31');
 
       expect(sequelize.query).toHaveBeenCalledWith(
         expect.stringContaining('SELECT p.id as personId'),
@@ -170,7 +170,7 @@ describe('Chart Service', () => {
     it('should return empty array if no results', async () => {
       sequelize.query.mockResolvedValue([]);
 
-      const result = await getSocialActionsByPersonAndDivisionRaw(1, '2026-01-01', '2026-01-31');
+      const result = await getEventsByPersonAndDivisionRaw(1, '2026-01-01', '2026-01-31');
 
       expect(result).toEqual([]);
     });

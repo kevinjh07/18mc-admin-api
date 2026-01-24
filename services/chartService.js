@@ -1,6 +1,6 @@
 const { Sequelize, Op } = require('sequelize');
 const sequelize = require('../config/database');
-const SocialAction = require('../models/SocialAction');
+const Event = require('../models/Event');
 const Division = require('../models/Division');
 const Regional = require('../models/Regional');
 
@@ -9,7 +9,7 @@ const parseDateString = (dateString) => {
   return new Date(year, month - 1, day);
 };
 
-const getSocialActionCountByDateRange = async (
+const getEventCountByDateRange = async (
   startDate,
   endDate,
   regionalId,
@@ -26,10 +26,10 @@ const getSocialActionCountByDateRange = async (
     },
   });
 
-  const socialActions = await SocialAction.findAll({
+  const events = await Event.findAll({
     attributes: [
       'divisionId',
-      [Sequelize.fn('COUNT', Sequelize.col('SocialAction.id')), 'actionCount'],
+      [Sequelize.fn('COUNT', Sequelize.col('Event.id')), 'actionCount'],
     ],
     where: {
       date: {
@@ -48,9 +48,9 @@ const getSocialActionCountByDateRange = async (
     return acc;
   }, {});
 
-  socialActions.forEach((action) => {
-    if (divisionMap[action.divisionId]) {
-      divisionMap[action.divisionId].value = action.get('actionCount');
+  events.forEach((event) => {
+    if (divisionMap[event.divisionId]) {
+      divisionMap[event.divisionId].value = event.get('actionCount');
     }
   });
 
@@ -64,7 +64,7 @@ const getSocialActionCountByDateRange = async (
   return sortedDivisions;
 };
 
-const getSocialActionInternalExternalCountByDateRange = async (
+const getEventInternalExternalCountByDateRange = async (
   startDate,
   endDate,
   regionalId,
@@ -81,11 +81,11 @@ const getSocialActionInternalExternalCountByDateRange = async (
     },
   });
 
-  const socialActions = await SocialAction.findAll({
+  const events = await Event.findAll({
     attributes: [
       'divisionId',
       'actionType',
-      [Sequelize.fn('COUNT', Sequelize.col('SocialAction.id')), 'actionCount'],
+      [Sequelize.fn('COUNT', Sequelize.col('Event.id')), 'actionCount'],
     ],
     where: {
       date: {
@@ -108,17 +108,17 @@ const getSocialActionInternalExternalCountByDateRange = async (
     return acc;
   }, {});
 
-  socialActions.forEach((action) => {
-    const division = divisionMap[action.divisionId];
+  events.forEach((event) => {
+    const division = divisionMap[event.divisionId];
     if (division) {
-      const type = action.actionType;
+      const type = event.actionType;
       const seriesItem = division.series.find((item) => {
         if (type === 'internal') return item.name === 'Interna';
         if (type === 'external') return item.name === 'Externa';
         if (type === 'fundraising') return item.name === 'Arrecadação';
       });
       if (seriesItem) {
-        seriesItem.value = action.get('actionCount');
+        seriesItem.value = event.get('actionCount');
       }
     }
   });
@@ -135,7 +135,7 @@ const getSocialActionInternalExternalCountByDateRange = async (
   return sortedDivisions;
 };
 
-const getSocialActionsByPersonAndDivisionRaw = async (
+const getEventsByPersonAndDivisionRaw = async (
   divisionId,
   startDate,
   endDate,
@@ -144,25 +144,33 @@ const getSocialActionsByPersonAndDivisionRaw = async (
   endDate = parseDateString(endDate);
 
   const query = `
-    SELECT p.id as personId, p.shortName as name, d.name as divisionName, COUNT(sap.SocialActionId) as value
+    SELECT p.id as personId, p.shortName as name, d.name as divisionName, COUNT(ehp.EventId) as value
     FROM persons p
-    JOIN social_action_has_person sap ON p.id = sap.PersonId
-    JOIN social_actions sa ON sa.id = sap.SocialActionId
-    JOIN divisions d ON d.id = sa.divisionId
-    WHERE d.id = :divisionId AND sa.date BETWEEN :startDate AND :endDate
+    JOIN event_has_person ehp ON p.id = ehp.PersonId
+    JOIN events e ON e.id = ehp.EventId
+    JOIN divisions d ON d.id = e.divisionId
+    WHERE d.id = :divisionId AND e.date BETWEEN :startDate AND :endDate
     GROUP BY p.id, p.shortName, d.name
     ORDER BY value, name
   `;
 
-  const socialActions = await sequelize.query(query, {
+  const events = await sequelize.query(query, {
     replacements: { divisionId, startDate, endDate },
     type: Sequelize.QueryTypes.SELECT,
   });
 
-  return socialActions;
+  return events;
 };
 
+// Backward compatibility exports
+const getSocialActionCountByDateRange = getEventCountByDateRange;
+const getSocialActionInternalExternalCountByDateRange = getEventInternalExternalCountByDateRange;
+const getSocialActionsByPersonAndDivisionRaw = getEventsByPersonAndDivisionRaw;
+
 module.exports = {
+  getEventCountByDateRange,
+  getEventInternalExternalCountByDateRange,
+  getEventsByPersonAndDivisionRaw,
   getSocialActionCountByDateRange,
   getSocialActionInternalExternalCountByDateRange,
   getSocialActionsByPersonAndDivisionRaw,

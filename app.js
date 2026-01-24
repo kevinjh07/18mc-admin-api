@@ -12,7 +12,7 @@ const { authenticateToken, checkRole } = require('./middleware/auth');
 
 const app = express();
 
-require('./models/SocialActionHasPerson');
+require('./models/EventPerson');
 
 app.use(
   cors({
@@ -52,10 +52,10 @@ app.use(
   require('./routes/divisions'),
 );
 app.use(
-  '/social-actions',
+  '/events',
   authenticateToken,
   checkRole(['user', 'admin']),
-  require('./routes/socialActions'),
+  require('./routes/events'),
 );
 app.use(
   '/charts',

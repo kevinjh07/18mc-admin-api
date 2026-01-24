@@ -1,14 +1,14 @@
 require('dotenv').config();
 
 jest.mock('../models/Division');
-jest.mock('../models/SocialAction', () => ({
+jest.mock('../models/Event', () => ({
   findAll: jest.fn(),
 }));
 jest.mock('../models/Person');
 
 const { generateDivisionReport } = require('../services/reportService');
 const Division = require('../models/Division');
-const SocialAction = require('../models/SocialAction');
+const Event = require('../models/Event');
 const Person = require('../models/Person');
 
 describe('Report Service', () => {
@@ -17,13 +17,14 @@ describe('Report Service', () => {
   });
 
   describe('generateDivisionReport', () => {
-    it('should generate division report with social actions', async () => {
-      const mockSocialActions = [
+    it('should generate division report with events', async () => {
+      const mockEvents = [
         {
           id: 1,
           title: 'Action 1',
           date: '2026-01-01',
           actionType: 'internal',
+          eventType: 'social_action',
           divisionId: 1,
           Division: { id: 1, name: 'Division A' },
           People: [
@@ -35,6 +36,7 @@ describe('Report Service', () => {
           title: 'Action 2',
           date: '2026-01-02',
           actionType: 'external',
+          eventType: 'social_action',
           divisionId: 1,
           Division: { id: 1, name: 'Division A' },
           People: [
@@ -43,12 +45,13 @@ describe('Report Service', () => {
         },
       ];
 
-      SocialAction.findAll.mockResolvedValue(mockSocialActions);
+      Event.findAll.mockResolvedValue(mockEvents);
 
       const result = await generateDivisionReport(1, '2026-01-01', '2026-01-31');
 
-      expect(SocialAction.findAll).toHaveBeenCalledWith({
+      expect(Event.findAll).toHaveBeenCalledWith({
         where: expect.objectContaining({
+          eventType: 'social_action',
           date: expect.any(Object),
         }),
         include: [
@@ -98,24 +101,25 @@ describe('Report Service', () => {
     });
 
     it('should generate report without date filters', async () => {
-      const mockSocialActions = [
+      const mockEvents = [
         {
           id: 1,
           title: 'Action 1',
           date: '2026-01-01',
           actionType: 'internal',
+          eventType: 'social_action',
           divisionId: 1,
           Division: { id: 1, name: 'Division A' },
           People: [],
         },
       ];
 
-      SocialAction.findAll.mockResolvedValue(mockSocialActions);
+      Event.findAll.mockResolvedValue(mockEvents);
 
       const result = await generateDivisionReport(1);
 
-      expect(SocialAction.findAll).toHaveBeenCalledWith({
-        where: {},
+      expect(Event.findAll).toHaveBeenCalledWith({
+        where: { eventType: 'social_action' },
         include: expect.any(Array),
         order: [['date', 'DESC']],
       });
@@ -139,8 +143,8 @@ describe('Report Service', () => {
       ]);
     });
 
-    it('should return empty array if no social actions', async () => {
-      SocialAction.findAll.mockResolvedValue([]);
+    it('should return empty array if no events', async () => {
+      Event.findAll.mockResolvedValue([]);
 
       const result = await generateDivisionReport(1, '2026-01-01', '2026-01-31');
 
