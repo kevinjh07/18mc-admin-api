@@ -1,9 +1,9 @@
 const Person = require('../models/Person');
 const Division = require('../models/Division');
 const Regional = require('../models/Regional');
-const MonthlyPayment = require('../models/MonthlyPayment');
+const LatePayment = require('../models/LatePayment');
 const PersonAlreadyExistsError = require('../exceptions/PersonAlreadyExistsError');
-const PaymentAlreadyExistsError = require('../exceptions/PaymentAlreadyExistsError');
+const LatePaymentAlreadyExistsError = require('../exceptions/LatePaymentAlreadyExistsError');
 const { Op } = require('sequelize');
 
 const createPerson = async (fullName, shortName, divisionId, hierarchyLevel, isActive) => {
@@ -95,22 +95,22 @@ const getPersonsByDivision = async (divisionId, isActive) => {
   });
 };
 
-const recordMonthlyPayment = async (personId, year, month, paidOnTime, paidAt = null) => {
+const recordLatePayment = async (personId, year, month, paidAt = null, notes = null) => {
   const person = await Person.findByPk(personId);
   if (!person) {
     throw new Error('Pessoa não encontrada.');
   }
 
-  const existing = await MonthlyPayment.findOne({ where: { personId, year, month } });
+  const existing = await LatePayment.findOne({ where: { personId, year, month } });
   if (existing) {
-    throw new PaymentAlreadyExistsError('Já existe um pagamento mensal para este integrante no ano e mês especificados.');
+    throw new LatePaymentAlreadyExistsError('Já existe um registro de atraso para este integrante no ano e mês especificados.');
   }
 
-  const created = await MonthlyPayment.create({ personId, year, month, paidOnTime, paidAt });
+  const created = await LatePayment.create({ personId, year, month, paidAt, notes });
   return created;
 };
 
-const getMonthlyPayments = async (personId, year) => {
+const getLatePayments = async (personId, year) => {
   const person = await Person.findByPk(personId);
   if (!person) {
     return null;
@@ -121,7 +121,7 @@ const getMonthlyPayments = async (personId, year) => {
     whereCondition.year = year;
   }
 
-  return await MonthlyPayment.findAll({
+  return await LatePayment.findAll({
     where: whereCondition,
     order: [['year', 'ASC'], ['month', 'ASC']],
   });
@@ -133,6 +133,6 @@ module.exports = {
   getAllPersons,
   updatePerson,
   getPersonsByDivision,
-  recordMonthlyPayment,
-  getMonthlyPayments,
+  recordLatePayment,
+  getLatePayments,
 };

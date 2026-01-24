@@ -43,14 +43,14 @@ describe('Division Service', () => {
 
   describe('getDivisionById', () => {
     it('should return division by id', async () => {
-      const mockDivision = { id: 1, name: 'Division A', Regional: { name: 'Regional A' } };
+      const mockDivision = { id: 1, name: 'Division A', Regional: { name: 'Regional A', commandId: 1 } };
 
       Division.findByPk.mockResolvedValue(mockDivision);
 
       const result = await getDivisionById(1);
 
       expect(Division.findByPk).toHaveBeenCalledWith(1, {
-        include: { model: Regional, attributes: ['name'] },
+        include: { model: Regional, attributes: ['name', 'commandId'] },
       });
       expect(result).toEqual(mockDivision);
     });

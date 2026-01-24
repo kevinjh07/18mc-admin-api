@@ -264,9 +264,9 @@ router.get('/division/:divisionId', personController.getPersonsByDivision);
 
 /**
  * @swagger
- * /persons/{id}/payments:
+ * /persons/{id}/late-payments:
  *   post:
- *     summary: Registra ou atualiza o pagamento mensal de uma pessoa
+ *     summary: Registra um atraso de pagamento mensal de um integrante
  *     tags: [Persons]
  *     parameters:
  *       - in: path
@@ -285,23 +285,50 @@ router.get('/division/:divisionId', personController.getPersonsByDivision);
  *                 type: integer
  *               month:
  *                 type: integer
- *               paidOnTime:
- *                 type: boolean
  *               paidAt:
  *                 type: string
  *                 format: date-time
+ *                 description: Data do pagamento (se já pagou com atraso)
+ *               notes:
+ *                 type: string
+ *                 description: Observações sobre o atraso
  *     responses:
  *       201:
- *         description: Pagamento registrado
+ *         description: Atraso registrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 personId:
+ *                   type: integer
+ *                 year:
+ *                   type: integer
+ *                 month:
+ *                   type: integer
+ *                 paidAt:
+ *                   type: string
+ *                   format: date-time
+ *                 notes:
+ *                   type: string
+ *                 createdAt:
+ *                   type: string
+ *                 updatedAt:
+ *                   type: string
  *       404:
  *         description: Pessoa não encontrada
+ *       409:
+ *         description: Já existe um registro de atraso para este mês
  */
 router.post(
-  '/:id/payments',
+  '/:id/late-payments',
   [
     check('year').isInt().withMessage('year deve ser um inteiro'),
     check('month').isInt({ min: 1, max: 12 }).withMessage('month deve ser 1-12'),
-    check('paidOnTime').optional().isBoolean().withMessage('paidOnTime deve ser booleano'),
+    check('paidAt').optional().isISO8601().withMessage('paidAt deve ser uma data válida'),
+    check('notes').optional().isString().isLength({ max: 255 }).withMessage('notes deve ter no máximo 255 caracteres'),
   ],
   (req, res, next) => {
     const errors = validationResult(req);
@@ -310,14 +337,14 @@ router.post(
     }
     next();
   },
-  personController.addMonthlyPayment
+  personController.addLatePayment
 );
 
 /**
  * @swagger
- * /persons/{id}/payments:
+ * /persons/{id}/late-payments:
  *   get:
- *     summary: Lista pagamentos mensais de uma pessoa
+ *     summary: Lista atrasos de pagamento de um integrante
  *     tags: [Persons]
  *     parameters:
  *       - in: path
@@ -332,7 +359,7 @@ router.post(
  *         description: Filtrar por ano
  *     responses:
  *       200:
- *         description: Lista de pagamentos
+ *         description: Lista de atrasos
  *         content:
  *           application/json:
  *             schema:
@@ -348,11 +375,11 @@ router.post(
  *                     type: integer
  *                   month:
  *                     type: integer
- *                   paidOnTime:
- *                     type: boolean
  *                   paidAt:
  *                     type: string
  *                     format: date-time
+ *                   notes:
+ *                     type: string
  *                   createdAt:
  *                     type: string
  *                   updatedAt:
@@ -360,6 +387,6 @@ router.post(
  *       404:
  *         description: Pessoa não encontrada
  */
-router.get('/:id/payments', personController.getMonthlyPayments);
+router.get('/:id/late-payments', personController.getLatePayments);
 
 module.exports = router;

@@ -523,7 +523,7 @@
         }
       }
     },
-    "/persons/{id}/payments": {
+    "/persons/{id}/late-payments": {
       "post": {
         "description": "",
         "parameters": [
@@ -545,10 +545,10 @@
                 "month": {
                   "example": "any"
                 },
-                "paidOnTime": {
+                "paidAt": {
                   "example": "any"
                 },
-                "paidAt": {
+                "notes": {
                   "example": "any"
                 }
               }
@@ -1642,7 +1642,7 @@
         }
       }
     },
-    "/{id}/payments": {
+    "/{id}/late-payments": {
       "post": {
         "description": "",
         "parameters": [
@@ -1664,10 +1664,10 @@
                 "month": {
                   "example": "any"
                 },
-                "paidOnTime": {
+                "paidAt": {
                   "example": "any"
                 },
-                "paidAt": {
+                "notes": {
                   "example": "any"
                 }
               }

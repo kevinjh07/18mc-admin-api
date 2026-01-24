@@ -113,7 +113,7 @@ describe('Event Service', () => {
     it('should return event by id', async () => {
       const mockEvent = {
         id: 1,
-        Division: { id: 1, name: 'Division A', Regional: { id: 1 } },
+        Division: { id: 1, name: 'Division A', Regional: { id: 1, commandId: 1 } },
         People: [{ id: 1, shortName: 'Person A' }],
       };
 
@@ -128,7 +128,7 @@ describe('Event Service', () => {
             attributes: ['id', 'name'],
             include: {
               model: Regional,
-              attributes: ['id'],
+              attributes: ['id', 'commandId'],
             },
           },
           {

@@ -1,6 +1,6 @@
 const PersonService = require('../services/personService');
 const PersonAlreadyExistsError = require('../exceptions/PersonAlreadyExistsError');
-const PaymentAlreadyExistsError = require('../exceptions/PaymentAlreadyExistsError');
+const LatePaymentAlreadyExistsError = require('../exceptions/LatePaymentAlreadyExistsError');
 const { logger } = require('sequelize/lib/utils/logger');
 
 const createPerson = async (req, res) => {
@@ -85,38 +85,38 @@ const getPersonsByDivision = async (req, res) => {
   }
 };
 
-const addMonthlyPayment = async (req, res) => {
-  const { year, month, paidOnTime, paidAt } = req.body;
+const addLatePayment = async (req, res) => {
+  const { year, month, paidAt, notes } = req.body;
   try {
-    const record = await PersonService.recordMonthlyPayment(
+    const record = await PersonService.recordLatePayment(
       parseInt(req.params.id),
       parseInt(year),
       parseInt(month),
-      Boolean(paidOnTime),
       paidAt ? new Date(paidAt) : null,
+      notes || null,
     );
     res.status(201).json(record);
   } catch (error) {
     if (error.message && error.message.includes('Pessoa não encontrada')) {
       return res.status(404).json({ error: error.message });
     }
-    if (error instanceof PaymentAlreadyExistsError) {
+    if (error instanceof LatePaymentAlreadyExistsError) {
       return res.status(409).json({ error: error.message });
     }
-    res.status(500).send('Error recording monthly payment');
+    res.status(500).send('Error recording late payment');
   }
 };
 
-const getMonthlyPayments = async (req, res) => {
+const getLatePayments = async (req, res) => {
   try {
     const year = req.query.year ? parseInt(req.query.year) : undefined;
-    const payments = await PersonService.getMonthlyPayments(parseInt(req.params.id), year);
+    const payments = await PersonService.getLatePayments(parseInt(req.params.id), year);
     if (payments === null) {
       return res.status(404).send();
     }
     res.json(payments);
   } catch (error) {
-    res.status(500).send('Error fetching monthly payments');
+    res.status(500).send('Error fetching late payments');
   }
 };
 
@@ -126,6 +126,6 @@ module.exports = {
   getAllPersons,
   updatePerson,
   getPersonsByDivision,
-  addMonthlyPayment,
-  getMonthlyPayments,
+  addLatePayment,
+  getLatePayments,
 };

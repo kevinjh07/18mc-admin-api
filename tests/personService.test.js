@@ -5,21 +5,20 @@ const {
   getPersonById,
   getAllPersons,
   updatePerson,
-  deletePerson,
   getPersonsByDivision,
-  recordMonthlyPayment,
-  getMonthlyPayments,
+  recordLatePayment,
+  getLatePayments,
 } = require('../services/personService');
 const Person = require('../models/Person');
 const Division = require('../models/Division');
 const Regional = require('../models/Regional');
-const MonthlyPayment = require('../models/MonthlyPayment');
-const PaymentAlreadyExistsError = require('../exceptions/PaymentAlreadyExistsError');
+const LatePayment = require('../models/LatePayment');
+const LatePaymentAlreadyExistsError = require('../exceptions/LatePaymentAlreadyExistsError');
 
 jest.mock('../models/Person');
 jest.mock('../models/Division');
 jest.mock('../models/Regional');
-jest.mock('../models/MonthlyPayment');
+jest.mock('../models/LatePayment');
 
 describe('Person Service', () => {
   beforeAll(() => {
@@ -57,61 +56,77 @@ describe('Person Service', () => {
     });
   });
 
-  describe('Monthly Payments', () => {
-    it('should create a monthly payment when none exists', async () => {
+  describe('Late Payments', () => {
+    it('should create a late payment when none exists', async () => {
       const personId = 1;
       const year = 2026;
       const month = 1;
-      const paidOnTime = true;
       const mockPerson = { id: personId };
-      const mockCreated = { id: 100, personId, year, month, paidOnTime, paidAt: null };
+      const mockCreated = { id: 100, personId, year, month, paidAt: null, notes: null };
 
       Person.findByPk.mockResolvedValue(mockPerson);
-      MonthlyPayment.findOne.mockResolvedValue(null);
-      MonthlyPayment.create.mockResolvedValue(mockCreated);
+      LatePayment.findOne.mockResolvedValue(null);
+      LatePayment.create.mockResolvedValue(mockCreated);
 
-      const result = await recordMonthlyPayment(personId, year, month, paidOnTime);
+      const result = await recordLatePayment(personId, year, month);
       expect(Person.findByPk).toHaveBeenCalledWith(personId);
-      expect(MonthlyPayment.findOne).toHaveBeenCalledWith({ where: { personId, year, month } });
-      expect(MonthlyPayment.create).toHaveBeenCalledWith({ personId, year, month, paidOnTime, paidAt: null });
+      expect(LatePayment.findOne).toHaveBeenCalledWith({ where: { personId, year, month } });
+      expect(LatePayment.create).toHaveBeenCalledWith({ personId, year, month, paidAt: null, notes: null });
       expect(result).toEqual(mockCreated);
     });
 
-    it('should throw PaymentAlreadyExistsError when payment already exists', async () => {
+    it('should create a late payment with paidAt and notes', async () => {
+      const personId = 1;
+      const year = 2026;
+      const month = 1;
+      const paidAt = new Date('2026-01-15');
+      const notes = 'Pagou com atraso';
+      const mockPerson = { id: personId };
+      const mockCreated = { id: 100, personId, year, month, paidAt, notes };
+
+      Person.findByPk.mockResolvedValue(mockPerson);
+      LatePayment.findOne.mockResolvedValue(null);
+      LatePayment.create.mockResolvedValue(mockCreated);
+
+      const result = await recordLatePayment(personId, year, month, paidAt, notes);
+      expect(LatePayment.create).toHaveBeenCalledWith({ personId, year, month, paidAt, notes });
+      expect(result).toEqual(mockCreated);
+    });
+
+    it('should throw LatePaymentAlreadyExistsError when late payment already exists', async () => {
       const personId = 1;
       const year = 2026;
       const month = 2;
-      const paidOnTime = false;
       const mockPerson = { id: personId };
-      const mockExisting = { id: 101, personId, year, month, paidOnTime: true };
+      const mockExisting = { id: 101, personId, year, month, paidAt: null };
 
       Person.findByPk.mockResolvedValue(mockPerson);
-      MonthlyPayment.findOne.mockResolvedValue(mockExisting);
+      LatePayment.findOne.mockResolvedValue(mockExisting);
 
-      await expect(recordMonthlyPayment(personId, year, month, paidOnTime)).rejects.toThrow(PaymentAlreadyExistsError);
-      expect(MonthlyPayment.findOne).toHaveBeenCalledWith({ where: { personId, year, month } });
+      await expect(recordLatePayment(personId, year, month)).rejects.toThrow(LatePaymentAlreadyExistsError);
+      expect(LatePayment.findOne).toHaveBeenCalledWith({ where: { personId, year, month } });
     });
 
-    it('should return null when getting payments for non-existent person', async () => {
+    it('should return null when getting late payments for non-existent person', async () => {
       Person.findByPk.mockResolvedValue(null);
-      const result = await getMonthlyPayments(999, 2026);
+      const result = await getLatePayments(999, 2026);
       expect(result).toBeNull();
     });
 
-    it('should return payments for a person and year', async () => {
+    it('should return late payments for a person and year', async () => {
       const personId = 1;
       const year = 2026;
       const mockPerson = { id: personId };
       const mockPayments = [
-        { id: 1, personId, year, month: 1, paidOnTime: true },
-        { id: 2, personId, year, month: 2, paidOnTime: false },
+        { id: 1, personId, year, month: 1, paidAt: null, notes: null },
+        { id: 2, personId, year, month: 2, paidAt: '2026-02-15', notes: 'Pagou após cobrança' },
       ];
 
       Person.findByPk.mockResolvedValue(mockPerson);
-      MonthlyPayment.findAll.mockResolvedValue(mockPayments);
+      LatePayment.findAll.mockResolvedValue(mockPayments);
 
-      const result = await getMonthlyPayments(personId, year);
-      expect(MonthlyPayment.findAll).toHaveBeenCalledWith({ where: { personId, year }, order: [['year', 'ASC'], ['month', 'ASC']] });
+      const result = await getLatePayments(personId, year);
+      expect(LatePayment.findAll).toHaveBeenCalledWith({ where: { personId, year }, order: [['year', 'ASC'], ['month', 'ASC']] });
       expect(result).toEqual(mockPayments);
     });
   });
