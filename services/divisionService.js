@@ -12,7 +12,7 @@ const createDivision = async (name, regionalId) => {
 
 const getDivisionById = async (id) => {
   return await Division.findByPk(id, {
-    include: { model: Regional, attributes: ['name'] },
+    include: { model: Regional, attributes: ['name', 'commandId'] },
   });
 };
 
