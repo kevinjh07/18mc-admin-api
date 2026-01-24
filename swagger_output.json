@@ -664,6 +664,9 @@
           "200": {
             "description": "OK"
           },
+          "400": {
+            "description": "Bad Request"
+          },
           "401": {
             "description": "Unauthorized"
           },
@@ -1430,17 +1433,7 @@
             "type": "string"
           },
           {
-            "name": "regionalId",
-            "in": "query",
-            "type": "string"
-          },
-          {
-            "name": "divisionId",
-            "in": "query",
-            "type": "string"
-          },
-          {
-            "name": "eventType",
+            "name": "commandId",
             "in": "query",
             "type": "string"
           }

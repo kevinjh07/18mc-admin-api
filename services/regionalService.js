@@ -23,9 +23,15 @@ const getRegionalById = async (id) => {
 
 const getAllRegionals = async (page, limit, commandId) => {
   const offset = (page - 1) * limit;
-  const where = {};
-  if (commandId) {
-    where.commandId = commandId;
+  if (!commandId) {
+    throw new ValidationError('commandId é obrigatório.');
+  }
+
+  const where = { commandId };
+
+  const command = await Command.findByPk(commandId);
+  if (!command) {
+    throw new ValidationError('Comando não encontrado.');
   }
   const regionals = await Regional.findAndCountAll({
     where,

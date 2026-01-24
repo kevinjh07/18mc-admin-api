@@ -11,7 +11,6 @@ const createEvent = async (event) => {
     throw new Error('Divisão inválida');
   }
 
-  // Validar que actionType é fornecido apenas para social_action
   if (eventType === 'social_action' && !actionType) {
     throw new Error('O tipo de ação (actionType) é obrigatório para eventos do tipo "ação social"');
   }
@@ -38,7 +37,7 @@ const getEventById = async (id) => {
         attributes: ['id', 'name'],
         include: {
           model: Regional,
-          attributes: ['id'],
+          attributes: ['id', 'commandId'],
         },
       },
       {

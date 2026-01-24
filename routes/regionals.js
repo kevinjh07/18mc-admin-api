@@ -112,7 +112,8 @@ router.get('/:id', regionalController.getRegionalById);
  *         name: commandId
  *         schema:
  *           type: integer
- *         description: ID do comando para filtrar as regionais
+ *         required: true
+ *         description: ID do comando (obrigatório) para filtrar as regionais
  *     responses:
  *       200:
  *         description: Lista de regionais retornada com sucesso.
@@ -133,7 +134,26 @@ router.get('/:id', regionalController.getRegionalById);
  *                     type: integer
  *                     description: ID do comando associado.
  */
-router.get('/', regionalController.getAllRegionals);
+router.get(
+  '/',
+  [
+    check('page').optional().isInt({ min: 1 }).withMessage('page deve ser inteiro >= 1.'),
+    check('limit').optional().isInt({ min: 1 }).withMessage('limit deve ser inteiro >= 1.'),
+    check('commandId')
+      .notEmpty()
+      .withMessage('commandId é obrigatório.')
+      .isInt()
+      .withMessage('commandId deve ser inteiro.'),
+  ],
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+  },
+  regionalController.getAllRegionals,
+);
 
 /**
  * @swagger

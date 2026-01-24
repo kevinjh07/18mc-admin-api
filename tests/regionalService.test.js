@@ -17,6 +17,10 @@ describe('Regional Service', () => {
     process.env.JAWSDB_URL = 'mysql://user:password@localhost:3306/mydb';
   });
 
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   describe('createRegional', () => {
     it('should create a regional successfully', async () => {
       const mockRegional = { id: 1, name: 'North' };
@@ -84,11 +88,12 @@ describe('Regional Service', () => {
           { id: 2, name: 'South' },
         ],
       };
+      Command.findByPk.mockResolvedValue({ id: 1, name: 'Command 1' });
       Regional.findAndCountAll.mockResolvedValue(mockRegionals);
 
-      const result = await getAllRegionals(1, 10);
+      const result = await getAllRegionals(1, 10, 1);
       expect(Regional.findAndCountAll).toHaveBeenCalledWith({
-        where: {},
+        where: { commandId: 1 },
         limit: 10,
         offset: 0,
         include: [{ model: expect.any(Function), as: 'command', attributes: ['id', 'name'] }],
@@ -106,6 +111,7 @@ describe('Regional Service', () => {
         count: 1,
         rows: [{ id: 1, name: 'North', commandId: 1 }],
       };
+      Command.findByPk.mockResolvedValue({ id: 1, name: 'Command 1' });
       Regional.findAndCountAll.mockResolvedValue(mockRegionals);
 
       const result = await getAllRegionals(1, 10, 1);
@@ -123,12 +129,27 @@ describe('Regional Service', () => {
       });
     });
 
+    it('should throw a ValidationError if commandId is missing', async () => {
+      await expect(getAllRegionals(1, 10)).rejects.toThrow('commandId é obrigatório.');
+      expect(Command.findByPk).not.toHaveBeenCalled();
+      expect(Regional.findAndCountAll).not.toHaveBeenCalled();
+    });
+
+    it('should throw a ValidationError if command does not exist', async () => {
+      Command.findByPk.mockResolvedValue(null);
+
+      await expect(getAllRegionals(1, 10, 1)).rejects.toThrow('Comando não encontrado.');
+      expect(Command.findByPk).toHaveBeenCalledWith(1);
+      expect(Regional.findAndCountAll).not.toHaveBeenCalled();
+    });
+
     it('should throw an error if fetching fails', async () => {
+      Command.findByPk.mockResolvedValue({ id: 1, name: 'Command 1' });
       Regional.findAndCountAll.mockRejectedValue(
         new Error('Error fetching regionals'),
       );
 
-      await expect(getAllRegionals(1, 10)).rejects.toThrow(
+      await expect(getAllRegionals(1, 10, 1)).rejects.toThrow(
         'Error fetching regionals',
       );
     });
