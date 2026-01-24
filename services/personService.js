@@ -32,7 +32,7 @@ const getPersonById = async (id) => {
       attributes: ['id', 'name'],
       include: {
         model: Regional,
-        attributes: ['id'],
+        attributes: ['id', 'commandId'],
       },
     },
   });
