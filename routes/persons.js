@@ -327,7 +327,16 @@ router.post(
   [
     check('year').isInt().withMessage('year deve ser um inteiro'),
     check('month').isInt({ min: 1, max: 12 }).withMessage('month deve ser 1-12'),
-    check('paidAt').optional({ values: 'falsy' }).isISO8601().withMessage('paidAt deve ser uma data válida'),
+    check('paidAt')
+      .optional({ values: 'falsy' })
+      .isISO8601()
+      .withMessage('paidAt deve ser uma data válida')
+      .custom((value) => {
+        if (new Date(value) > new Date()) {
+          throw new Error('A data de pagamento não pode ser uma data futura');
+        }
+        return true;
+      }),
     check('notes').optional({ values: 'falsy' }).isLength({ max: 255 }).withMessage('notes deve ter no máximo 255 caracteres'),
   ],
   (req, res, next) => {

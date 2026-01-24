@@ -63,6 +63,44 @@ describe('Late Payments Endpoints', () => {
       expect(res.body).toHaveProperty('errors');
     });
 
+    it('should return 400 when paidAt is a future date', async () => {
+      const futureDate = new Date();
+      futureDate.setFullYear(futureDate.getFullYear() + 1);
+
+      const res = await request(app)
+        .post('/persons/1/late-payments')
+        .send({ year: 2026, month: 1, paidAt: futureDate.toISOString() });
+
+      expect(res.statusCode).toEqual(400);
+      expect(res.body).toHaveProperty('errors');
+      expect(res.body.errors[0].msg).toEqual('A data de pagamento não pode ser uma data futura');
+    });
+
+    it('should accept paidAt with current or past date', async () => {
+      const pastDate = '2026-01-10T10:00:00.000Z';
+      const mockRecord = { id: 10, personId: 1, year: 2026, month: 1, paidAt: pastDate, notes: null };
+      PersonService.recordLatePayment.mockResolvedValue(mockRecord);
+
+      const res = await request(app)
+        .post('/persons/1/late-payments')
+        .send({ year: 2026, month: 1, paidAt: pastDate });
+
+      expect(res.statusCode).toEqual(201);
+      expect(res.body).toEqual(mockRecord);
+    });
+
+    it('should accept empty string for notes', async () => {
+      const mockRecord = { id: 10, personId: 1, year: 2026, month: 1, paidAt: null, notes: null };
+      PersonService.recordLatePayment.mockResolvedValue(mockRecord);
+
+      const res = await request(app)
+        .post('/persons/1/late-payments')
+        .send({ year: 2026, month: 1, notes: '' });
+
+      expect(res.statusCode).toEqual(201);
+      expect(PersonService.recordLatePayment).toHaveBeenCalledWith(1, 2026, 1, null, null);
+    });
+
     it('should return 409 when late payment already exists', async () => {
       const LatePaymentAlreadyExistsError = require('../exceptions/LatePaymentAlreadyExistsError');
       PersonService.recordLatePayment.mockRejectedValue(new LatePaymentAlreadyExistsError('Já existe um registro de atraso para este integrante no ano e mês especificados.'));
