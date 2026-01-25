@@ -1,6 +1,7 @@
 const Division = require('../models/Division');
 const Event = require('../models/Event');
 const Person = require('../models/Person');
+const LatePayment = require('../models/LatePayment');
 const { Op } = require('sequelize');
 
 const generateDivisionReport = async (regionalId, startDate, endDate) => {
@@ -72,6 +73,94 @@ const generateDivisionReport = async (regionalId, startDate, endDate) => {
   return Object.values(divisionMap);
 };
 
+const getGraduationScores = async (divisionId, startDate, endDate) => {
+  const division = await Division.findByPk(divisionId);
+  if (!division) {
+    return null;
+  }
+
+  // Busca integrantes ativos da divisão
+  const persons = await Person.findAll({
+    where: { divisionId, isActive: true },
+    attributes: ['id', 'fullName', 'shortName'],
+  });
+
+  if (persons.length === 0) {
+    return { period: { start: startDate, end: endDate }, data: [] };
+  }
+
+  const personIds = persons.map((p) => p.id);
+
+  // Busca eventos no período
+  const events = await Event.findAll({
+    where: {
+      divisionId,
+      date: { [Op.between]: [startDate, endDate] },
+    },
+    include: [{ model: Person, where: { id: { [Op.in]: personIds } }, required: false }],
+  });
+
+  // Extrai meses do período para verificar atrasos
+  const months = [];
+  const current = new Date(startDate);
+  const end = new Date(endDate);
+  while (current <= end) {
+    months.push({ year: current.getFullYear(), month: current.getMonth() + 1 });
+    current.setMonth(current.getMonth() + 1);
+  }
+
+  // Busca atrasos no período
+  const latePayments = await LatePayment.findAll({
+    where: {
+      personId: { [Op.in]: personIds },
+      [Op.or]: months.map((m) => ({ year: m.year, month: m.month })),
+    },
+  });
+
+  const latePaymentsByPerson = {};
+  latePayments.forEach((lp) => {
+    if (!latePaymentsByPerson[lp.personId]) {
+      latePaymentsByPerson[lp.personId] = [];
+    }
+    latePaymentsByPerson[lp.personId].push(lp);
+  });
+
+  // Calcula pontuação de cada integrante
+  const data = persons.map((person) => {
+    const participations = { social_action: false, poll: false, other: false };
+
+    events.forEach((event) => {
+      const participated = event.People && event.People.some((p) => p.id === person.id);
+      if (participated) {
+        participations[event.eventType] = true;
+      }
+    });
+
+    const hasLatePayment = latePaymentsByPerson[person.id] && latePaymentsByPerson[person.id].length > 0;
+
+    const scores = {
+      socialAction: participations.social_action ? 1 : 0,
+      poll: participations.poll ? 1 : 0,
+      otherEvents: participations.other ? 1 : 0,
+      payments: hasLatePayment ? 0 : 1,
+    };
+
+    return {
+      personId: person.id,
+      fullName: person.fullName,
+      shortName: person.shortName,
+      scores,
+      totalScore: scores.socialAction + scores.poll + scores.otherEvents + scores.payments,
+    };
+  });
+
+  return {
+    period: { start: startDate, end: endDate },
+    data,
+  };
+};
+
 module.exports = {
   generateDivisionReport,
+  getGraduationScores,
 };

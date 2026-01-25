@@ -4,12 +4,18 @@ jest.mock('../models/Division');
 jest.mock('../models/Event', () => ({
   findAll: jest.fn(),
 }));
-jest.mock('../models/Person');
+jest.mock('../models/Person', () => ({
+  findAll: jest.fn(),
+}));
+jest.mock('../models/LatePayment', () => ({
+  findAll: jest.fn(),
+}));
 
-const { generateDivisionReport } = require('../services/reportService');
+const { generateDivisionReport, getGraduationScores } = require('../services/reportService');
 const Division = require('../models/Division');
 const Event = require('../models/Event');
 const Person = require('../models/Person');
+const LatePayment = require('../models/LatePayment');
 
 describe('Report Service', () => {
   afterEach(() => {
@@ -149,6 +155,98 @@ describe('Report Service', () => {
       const result = await generateDivisionReport(1, '2026-01-01', '2026-01-31');
 
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('getGraduationScores', () => {
+    it('should return null if division not found', async () => {
+      Division.findByPk.mockResolvedValue(null);
+
+      const result = await getGraduationScores(999, new Date('2025-01-01'), new Date('2025-12-31'));
+
+      expect(result).toBeNull();
+    });
+
+    it('should return empty data if no active persons in division', async () => {
+      Division.findByPk.mockResolvedValue({ id: 1 });
+      Person.findAll.mockResolvedValue([]);
+
+      const result = await getGraduationScores(1, new Date('2025-01-01'), new Date('2025-12-31'));
+
+      expect(result.data).toEqual([]);
+    });
+
+    it('should calculate scores correctly for person with all points', async () => {
+      Division.findByPk.mockResolvedValue({ id: 1 });
+      Person.findAll.mockResolvedValue([
+        { id: 1, fullName: 'João Silva', shortName: 'Silva' },
+      ]);
+
+      Event.findAll.mockResolvedValue([
+        { id: 1, eventType: 'social_action', People: [{ id: 1 }] },
+        { id: 2, eventType: 'poll', People: [{ id: 1 }] },
+        { id: 3, eventType: 'other', People: [{ id: 1 }] },
+      ]);
+
+      LatePayment.findAll.mockResolvedValue([]);
+
+      const result = await getGraduationScores(1, new Date('2025-01-01'), new Date('2025-12-31'));
+
+      expect(result.data[0].scores).toEqual({
+        socialAction: 1,
+        poll: 1,
+        otherEvents: 1,
+        payments: 1,
+      });
+      expect(result.data[0].totalScore).toBe(4);
+    });
+
+    it('should calculate scores correctly for person with late payment', async () => {
+      Division.findByPk.mockResolvedValue({ id: 1 });
+      Person.findAll.mockResolvedValue([
+        { id: 1, fullName: 'João Silva', shortName: 'Silva' },
+      ]);
+
+      Event.findAll.mockResolvedValue([
+        { id: 1, eventType: 'social_action', People: [{ id: 1 }] },
+      ]);
+
+      LatePayment.findAll.mockResolvedValue([
+        { personId: 1, year: 2025, month: 3 },
+      ]);
+
+      const result = await getGraduationScores(1, new Date('2025-01-01'), new Date('2025-12-31'));
+
+      expect(result.data[0].scores).toEqual({
+        socialAction: 1,
+        poll: 0,
+        otherEvents: 0,
+        payments: 0,
+      });
+      expect(result.data[0].totalScore).toBe(1);
+    });
+
+    it('should calculate scores correctly for person with no participation', async () => {
+      Division.findByPk.mockResolvedValue({ id: 1 });
+      Person.findAll.mockResolvedValue([
+        { id: 1, fullName: 'João Silva', shortName: 'Silva' },
+      ]);
+
+      Event.findAll.mockResolvedValue([
+        { id: 1, eventType: 'social_action', People: [] },
+      ]);
+
+      LatePayment.findAll.mockResolvedValue([]);
+
+      const result = await getGraduationScores(1, new Date('2025-01-01'), new Date('2025-12-31'));
+
+      expect(result.data[0].scores).toEqual({
+        socialAction: 0,
+        poll: 0,
+        otherEvents: 0,
+        payments: 1,
+      });
+      expect(result.data[0].totalScore).toBe(1);
     });
   });
 });

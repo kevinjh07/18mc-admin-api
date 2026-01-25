@@ -1,5 +1,8 @@
 require('dotenv').config();
 
+jest.mock('../models/Division');
+jest.mock('../models/Regional');
+
 const {
   createDivision,
   getDivisionById,
@@ -10,9 +13,6 @@ const {
 } = require('../services/divisionService');
 const Division = require('../models/Division');
 const Regional = require('../models/Regional');
-
-jest.mock('../models/Division');
-jest.mock('../models/Regional');
 
 describe('Division Service', () => {
   afterEach(() => {
