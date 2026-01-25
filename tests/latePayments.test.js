@@ -115,18 +115,57 @@ describe('Late Payments Endpoints', () => {
   });
 
   describe('GET /persons/:id/late-payments', () => {
-    it('should return late payments 200', async () => {
-      const mockPayments = [
-        { id: 1, personId: 1, year: 2026, month: 1, paidAt: null, notes: null },
-        { id: 2, personId: 1, year: 2026, month: 2, paidAt: '2026-02-20T10:00:00.000Z', notes: 'Pagou após cobrança' },
-      ];
-      PersonService.getLatePayments.mockResolvedValue(mockPayments);
+    it('should return late payments with pagination', async () => {
+      const mockResponse = {
+        totalItems: 2,
+        totalPages: 1,
+        currentPage: 1,
+        data: [
+          { id: 2, personId: 1, year: 2026, month: 2, paidAt: '2026-02-20T10:00:00.000Z', notes: 'Pagou após cobrança' },
+          { id: 1, personId: 1, year: 2026, month: 1, paidAt: null, notes: null },
+        ],
+      };
+      PersonService.getLatePayments.mockResolvedValue(mockResponse);
 
-      const res = await request(app).get('/persons/1/late-payments?year=2026');
+      const res = await request(app).get('/persons/1/late-payments');
 
       expect(res.statusCode).toEqual(200);
-      expect(res.body).toEqual(mockPayments);
-      expect(PersonService.getLatePayments).toHaveBeenCalledWith(1, 2026);
+      expect(res.body).toEqual(mockResponse);
+      expect(PersonService.getLatePayments).toHaveBeenCalledWith(1, 1, 10);
+    });
+
+    it('should use custom page and limit', async () => {
+      const mockResponse = {
+        totalItems: 25,
+        totalPages: 5,
+        currentPage: 2,
+        data: [
+          { id: 10, personId: 1, year: 2025, month: 8, paidAt: null, notes: null },
+        ],
+      };
+      PersonService.getLatePayments.mockResolvedValue(mockResponse);
+
+      const res = await request(app).get('/persons/1/late-payments?page=2&limit=5');
+
+      expect(res.statusCode).toEqual(200);
+      expect(res.body).toEqual(mockResponse);
+      expect(PersonService.getLatePayments).toHaveBeenCalledWith(1, 2, 5);
+    });
+
+    it('should return 400 for invalid page parameter', async () => {
+      const res = await request(app).get('/persons/1/late-payments?page=0');
+
+      expect(res.statusCode).toEqual(400);
+      expect(res.body).toHaveProperty('errors');
+      expect(res.body.errors[0].msg).toEqual('page deve ser inteiro >= 1');
+    });
+
+    it('should return 400 for invalid limit parameter', async () => {
+      const res = await request(app).get('/persons/1/late-payments?limit=-1');
+
+      expect(res.statusCode).toEqual(400);
+      expect(res.body).toHaveProperty('errors');
+      expect(res.body.errors[0].msg).toEqual('limit deve ser inteiro >= 1');
     });
 
     it('should return 404 when person not found', async () => {

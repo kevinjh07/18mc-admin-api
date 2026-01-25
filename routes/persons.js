@@ -362,40 +362,68 @@ router.post(
  *         schema:
  *           type: integer
  *       - in: query
- *         name: year
+ *         name: page
  *         schema:
  *           type: integer
- *         description: Filtrar por ano
+ *         description: Número da página (padrão 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Número de itens por página (padrão 10)
  *     responses:
  *       200:
  *         description: Lista de atrasos
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: integer
- *                   personId:
- *                     type: integer
- *                   year:
- *                     type: integer
- *                   month:
- *                     type: integer
- *                   paidAt:
- *                     type: string
- *                     format: date-time
- *                   notes:
- *                     type: string
- *                   createdAt:
- *                     type: string
- *                   updatedAt:
- *                     type: string
+ *               type: object
+ *               properties:
+ *                 totalItems:
+ *                   type: integer
+ *                 totalPages:
+ *                   type: integer
+ *                 currentPage:
+ *                   type: integer
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       personId:
+ *                         type: integer
+ *                       year:
+ *                         type: integer
+ *                       month:
+ *                         type: integer
+ *                       paidAt:
+ *                         type: string
+ *                         format: date-time
+ *                       notes:
+ *                         type: string
+ *                       createdAt:
+ *                         type: string
+ *                       updatedAt:
+ *                         type: string
  *       404:
  *         description: Pessoa não encontrada
  */
-router.get('/:id/late-payments', personController.getLatePayments);
+router.get(
+  '/:id/late-payments',
+  [
+    check('page').optional({ values: 'falsy' }).isInt({ min: 1 }).withMessage('page deve ser inteiro >= 1'),
+    check('limit').optional({ values: 'falsy' }).isInt({ min: 1 }).withMessage('limit deve ser inteiro >= 1'),
+  ],
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+  },
+  personController.getLatePayments
+);
 
 module.exports = router;

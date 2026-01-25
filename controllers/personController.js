@@ -109,8 +109,9 @@ const addLatePayment = async (req, res) => {
 
 const getLatePayments = async (req, res) => {
   try {
-    const year = req.query.year ? parseInt(req.query.year) : undefined;
-    const payments = await PersonService.getLatePayments(parseInt(req.params.id), year);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const payments = await PersonService.getLatePayments(parseInt(req.params.id), page, limit);
     if (payments === null) {
       return res.status(404).send();
     }

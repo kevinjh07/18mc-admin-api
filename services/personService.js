@@ -110,21 +110,27 @@ const recordLatePayment = async (personId, year, month, paidAt = null, notes = n
   return created;
 };
 
-const getLatePayments = async (personId, year) => {
+const getLatePayments = async (personId, page, limit) => {
   const person = await Person.findByPk(personId);
   if (!person) {
     return null;
   }
 
-  const whereCondition = { personId };
-  if (year !== undefined && year !== null) {
-    whereCondition.year = year;
-  }
+  const offset = (page - 1) * limit;
 
-  return await LatePayment.findAll({
-    where: whereCondition,
-    order: [['year', 'ASC'], ['month', 'ASC']],
+  const result = await LatePayment.findAndCountAll({
+    where: { personId },
+    order: [['year', 'DESC'], ['month', 'DESC']],
+    limit,
+    offset,
   });
+
+  return {
+    totalItems: result.count,
+    totalPages: Math.ceil(result.count / limit),
+    currentPage: page,
+    data: result.rows,
+  };
 };
 
 module.exports = {
