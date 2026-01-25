@@ -154,6 +154,8 @@ const getGraduationScores = async (divisionId, startDate, endDate) => {
     };
   });
 
+  data.sort((a, b) => a.shortName.localeCompare(b.shortName, 'pt-BR'));
+
   return {
     period: { start: startDate, end: endDate },
     data,
