@@ -182,6 +182,38 @@ router.get('/', reportController.getDivisionReport);
  *                             type: integer
  *                       totalScore:
  *                         type: integer
+ *                       events:
+ *                         type: array
+ *                         description: Lista de eventos da divisão com participação do integrante
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: integer
+ *                             title:
+ *                               type: string
+ *                             date:
+ *                               type: string
+ *                               format: date-time
+ *                             eventType:
+ *                               type: string
+ *                               enum: [social_action, poll, other]
+ *                             participated:
+ *                               type: boolean
+ *                       latePayments:
+ *                         type: array
+ *                         description: Lista de pagamentos atrasados do integrante no período
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             year:
+ *                               type: integer
+ *                             month:
+ *                               type: integer
+ *                             paidAt:
+ *                               type: string
+ *                               format: date-time
+ *                               nullable: true
  *       400:
  *         description: Parâmetros inválidos
  *       404:

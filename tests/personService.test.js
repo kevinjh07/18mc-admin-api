@@ -109,25 +109,34 @@ describe('Person Service', () => {
 
     it('should return null when getting late payments for non-existent person', async () => {
       Person.findByPk.mockResolvedValue(null);
-      const result = await getLatePayments(999, 2026);
+      const result = await getLatePayments(999, 1, 10);
       expect(result).toBeNull();
     });
 
-    it('should return late payments for a person and year', async () => {
+    it('should return late payments for a person with pagination', async () => {
       const personId = 1;
-      const year = 2026;
       const mockPerson = { id: personId };
       const mockPayments = [
-        { id: 1, personId, year, month: 1, paidAt: null, notes: null },
-        { id: 2, personId, year, month: 2, paidAt: '2026-02-15', notes: 'Pagou após cobrança' },
+        { id: 1, personId, year: 2026, month: 1, paidAt: null, notes: null },
+        { id: 2, personId, year: 2026, month: 2, paidAt: '2026-02-15', notes: 'Pagou após cobrança' },
       ];
 
       Person.findByPk.mockResolvedValue(mockPerson);
-      LatePayment.findAll.mockResolvedValue(mockPayments);
+      LatePayment.findAndCountAll.mockResolvedValue({ count: 2, rows: mockPayments });
 
-      const result = await getLatePayments(personId, year);
-      expect(LatePayment.findAll).toHaveBeenCalledWith({ where: { personId, year }, order: [['year', 'ASC'], ['month', 'ASC']] });
-      expect(result).toEqual(mockPayments);
+      const result = await getLatePayments(personId, 1, 10);
+      expect(LatePayment.findAndCountAll).toHaveBeenCalledWith({
+        where: { personId },
+        order: [['year', 'DESC'], ['month', 'DESC']],
+        limit: 10,
+        offset: 0,
+      });
+      expect(result).toEqual({
+        totalItems: 2,
+        totalPages: 1,
+        currentPage: 1,
+        data: mockPayments,
+      });
     });
   });
 

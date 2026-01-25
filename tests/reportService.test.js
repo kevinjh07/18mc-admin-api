@@ -183,9 +183,9 @@ describe('Report Service', () => {
       ]);
 
       Event.findAll.mockResolvedValue([
-        { id: 1, eventType: 'social_action', People: [{ id: 1 }] },
-        { id: 2, eventType: 'poll', People: [{ id: 1 }] },
-        { id: 3, eventType: 'other', People: [{ id: 1 }] },
+        { id: 1, title: 'Ação Social 1', date: '2025-02-01', eventType: 'social_action', People: [{ id: 1 }] },
+        { id: 2, title: 'Enquete 1', date: '2025-03-01', eventType: 'poll', People: [{ id: 1 }] },
+        { id: 3, title: 'Outro Evento', date: '2025-04-01', eventType: 'other', People: [{ id: 1 }] },
       ]);
 
       LatePayment.findAll.mockResolvedValue([]);
@@ -199,6 +199,12 @@ describe('Report Service', () => {
         payments: 1,
       });
       expect(result.data[0].totalScore).toBe(4);
+      expect(result.data[0].events).toEqual([
+        { id: 1, title: 'Ação Social 1', date: '2025-02-01', eventType: 'social_action', participated: true },
+        { id: 2, title: 'Enquete 1', date: '2025-03-01', eventType: 'poll', participated: true },
+        { id: 3, title: 'Outro Evento', date: '2025-04-01', eventType: 'other', participated: true },
+      ]);
+      expect(result.data[0].latePayments).toEqual([]);
     });
 
     it('should calculate scores correctly for person with late payment', async () => {
@@ -208,11 +214,11 @@ describe('Report Service', () => {
       ]);
 
       Event.findAll.mockResolvedValue([
-        { id: 1, eventType: 'social_action', People: [{ id: 1 }] },
+        { id: 1, title: 'Ação Social 1', date: '2025-03-01', eventType: 'social_action', People: [{ id: 1 }] },
       ]);
 
       LatePayment.findAll.mockResolvedValue([
-        { personId: 1, year: 2025, month: 3 },
+        { personId: 1, year: 2025, month: 3, paidAt: null },
       ]);
 
       const result = await getGraduationScores(1, new Date('2025-01-01'), new Date('2025-12-31'));
@@ -224,6 +230,12 @@ describe('Report Service', () => {
         payments: 0,
       });
       expect(result.data[0].totalScore).toBe(1);
+      expect(result.data[0].events).toEqual([
+        { id: 1, title: 'Ação Social 1', date: '2025-03-01', eventType: 'social_action', participated: true },
+      ]);
+      expect(result.data[0].latePayments).toEqual([
+        { year: 2025, month: 3, paidAt: null },
+      ]);
     });
 
     it('should calculate scores correctly for person with no participation', async () => {
@@ -233,7 +245,7 @@ describe('Report Service', () => {
       ]);
 
       Event.findAll.mockResolvedValue([
-        { id: 1, eventType: 'social_action', People: [] },
+        { id: 1, title: 'Ação Social 1', date: '2025-02-15', eventType: 'social_action', People: [] },
       ]);
 
       LatePayment.findAll.mockResolvedValue([]);
@@ -247,6 +259,51 @@ describe('Report Service', () => {
         payments: 1,
       });
       expect(result.data[0].totalScore).toBe(1);
+      expect(result.data[0].events).toEqual([
+        { id: 1, title: 'Ação Social 1', date: '2025-02-15', eventType: 'social_action', participated: false },
+      ]);
+      expect(result.data[0].latePayments).toEqual([]);
+    });
+
+    it('should return events sorted by date ascending', async () => {
+      Division.findByPk.mockResolvedValue({ id: 1 });
+      Person.findAll.mockResolvedValue([
+        { id: 1, fullName: 'João Silva', shortName: 'Silva' },
+      ]);
+
+      Event.findAll.mockResolvedValue([
+        { id: 1, title: 'Evento Antigo', date: '2025-01-15', eventType: 'social_action', People: [{ id: 1 }] },
+        { id: 2, title: 'Evento Recente', date: '2025-06-15', eventType: 'poll', People: [] },
+      ]);
+
+      LatePayment.findAll.mockResolvedValue([]);
+
+      const result = await getGraduationScores(1, new Date('2025-01-01'), new Date('2025-12-31'));
+
+      expect(result.data[0].events[0].title).toBe('Evento Antigo');
+      expect(result.data[0].events[1].title).toBe('Evento Recente');
+    });
+
+    it('should return multiple late payments for a person', async () => {
+      Division.findByPk.mockResolvedValue({ id: 1 });
+      Person.findAll.mockResolvedValue([
+        { id: 1, fullName: 'João Silva', shortName: 'Silva' },
+      ]);
+
+      Event.findAll.mockResolvedValue([]);
+
+      LatePayment.findAll.mockResolvedValue([
+        { personId: 1, year: 2025, month: 1, paidAt: null },
+        { personId: 1, year: 2025, month: 2, paidAt: '2025-03-10' },
+      ]);
+
+      const result = await getGraduationScores(1, new Date('2025-01-01'), new Date('2025-12-31'));
+
+      expect(result.data[0].latePayments).toEqual([
+        { year: 2025, month: 1, paidAt: null },
+        { year: 2025, month: 2, paidAt: '2025-03-10' },
+      ]);
+      expect(result.data[0].scores.payments).toBe(0);
     });
   });
 });

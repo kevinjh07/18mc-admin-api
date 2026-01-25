@@ -91,16 +91,15 @@ const getGraduationScores = async (divisionId, startDate, endDate) => {
 
   const personIds = persons.map((p) => p.id);
 
-  // Busca eventos no período
   const events = await Event.findAll({
     where: {
       divisionId,
       date: { [Op.between]: [startDate, endDate] },
     },
     include: [{ model: Person, where: { id: { [Op.in]: personIds } }, required: false }],
+    order: [['date', 'ASC']],
   });
 
-  // Extrai meses do período para verificar atrasos
   const months = [];
   const current = new Date(startDate);
   const end = new Date(endDate);
@@ -109,7 +108,6 @@ const getGraduationScores = async (divisionId, startDate, endDate) => {
     current.setMonth(current.getMonth() + 1);
   }
 
-  // Busca atrasos no período
   const latePayments = await LatePayment.findAll({
     where: {
       personId: { [Op.in]: personIds },
@@ -125,18 +123,25 @@ const getGraduationScores = async (divisionId, startDate, endDate) => {
     latePaymentsByPerson[lp.personId].push(lp);
   });
 
-  // Calcula pontuação de cada integrante
   const data = persons.map((person) => {
     const participations = { social_action: false, poll: false, other: false };
 
-    events.forEach((event) => {
+    const personEvents = events.map((event) => {
       const participated = event.People && event.People.some((p) => p.id === person.id);
       if (participated) {
         participations[event.eventType] = true;
       }
+      return {
+        id: event.id,
+        title: event.title,
+        date: event.date,
+        eventType: event.eventType,
+        participated,
+      };
     });
 
-    const hasLatePayment = latePaymentsByPerson[person.id] && latePaymentsByPerson[person.id].length > 0;
+    const personLatePayments = latePaymentsByPerson[person.id] || [];
+    const hasLatePayment = personLatePayments.length > 0;
 
     const scores = {
       socialAction: participations.social_action ? 1 : 0,
@@ -151,6 +156,12 @@ const getGraduationScores = async (divisionId, startDate, endDate) => {
       shortName: person.shortName,
       scores,
       totalScore: scores.socialAction + scores.poll + scores.otherEvents + scores.payments,
+      events: personEvents,
+      latePayments: personLatePayments.map((lp) => ({
+        year: lp.year,
+        month: lp.month,
+        paidAt: lp.paidAt,
+      })),
     };
   });
 
