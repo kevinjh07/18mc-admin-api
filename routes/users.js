@@ -120,14 +120,14 @@ router.post('/login', async (req, res) => {
     return res.status(403).send('Usuário inativo');
   }
   const accessToken = jwt.sign(
-    { userId: user.id, role: user.role },
+    { userId: user.id, role: user.role, name: user.name },
     process.env.JWT_SECRET,
     {
       expiresIn: '60m',
     },
   );
   const refreshToken = jwt.sign(
-    { userId: user.id, role: user.role },
+    { userId: user.id, role: user.role, name: user.name },
     process.env.JWT_SECRET,
     {
       expiresIn: '1d',
