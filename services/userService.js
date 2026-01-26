@@ -19,7 +19,7 @@ const createUser = async ({ name, email, password, role }) => {
 const getUsers = async ({ page, limit, excludeUserId }) => {
   const offset = (page - 1) * limit;
   const users = await User.findAndCountAll({
-    attributes: ['id', 'email', 'isActive'],
+    attributes: ['id', 'email', 'name', 'isActive'],
     limit,
     offset,
     order: [['createdAt', 'DESC']],
@@ -29,7 +29,7 @@ const getUsers = async ({ page, limit, excludeUserId }) => {
       },
     },
   });
-  
+
   return {
     totalItems: users.count,
     totalPages: Math.ceil(users.count / limit),
