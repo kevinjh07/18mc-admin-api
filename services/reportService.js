@@ -79,9 +79,13 @@ const getGraduationScores = async (divisionId, startDate, endDate) => {
     return null;
   }
 
-  // Busca integrantes ativos da divisão
+  const eligibleHierarchyLevels = ['XI: Camiseta', 'X: PP', 'IX: Meio Colete'];
   const persons = await Person.findAll({
-    where: { divisionId, isActive: true },
+    where: {
+      divisionId,
+      isActive: true,
+      hierarchyLevel: { [Op.in]: eligibleHierarchyLevels },
+    },
     attributes: ['id', 'fullName', 'shortName'],
   });
 

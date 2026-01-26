@@ -167,12 +167,13 @@ describe('Report Service', () => {
       expect(result).toBeNull();
     });
 
-    it('should return empty data if no active persons in division', async () => {
+    it('should return empty data if no eligible persons in division', async () => {
       Division.findByPk.mockResolvedValue({ id: 1 });
       Person.findAll.mockResolvedValue([]);
 
       const result = await getGraduationScores(1, new Date('2025-01-01'), new Date('2025-12-31'));
 
+      expect(Person.findAll).toHaveBeenCalled();
       expect(result.data).toEqual([]);
     });
 
