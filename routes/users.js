@@ -5,6 +5,7 @@ const { check, validationResult } = require('express-validator');
 const User = require('../models/User');
 const { authenticateToken, checkRole } = require('../middleware/auth');
 const userController = require('../controllers/userController');
+const userService = require('../services/userService');
 const router = express.Router();
 const logger = require('../services/loggerService');
 
@@ -112,23 +113,16 @@ const logger = require('../services/loggerService');
  */
 
 router.post('/login', async (req, res) => {
-  const { email } = req.body;
-  logger.info('Tentativa de login', { email });
+  const { email, password } = req.body;
   try {
-    const user = await User.findOne({ where: { email } });
-    if (!user || !(await bcrypt.compare(req.body.password, user.password))) {
-      logger.warn('Falha no login: credenciais inválidas', { email });
-      return res.status(401).json({ error: 'Credenciais inválidas' });
-    }
-
-    const accessToken = jwt.sign({ userId: user.id, role: user.role, name: user.name }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    const refreshToken = jwt.sign({ userId: user.id, role: user.role, name: user.name }, process.env.JWT_SECRET, { expiresIn: '3h' });
-
-    logger.info('Login bem-sucedido', { userId: user.id });
+    const { accessToken, refreshToken } = await userService.loginUser({ email, password });
     res.json({ accessToken, refreshToken });
   } catch (error) {
-    logger.error('Erro ao realizar login', { error: error.message });
-    res.status(500).json({ error: 'Erro interno do servidor' });
+    if (error.message === 'Credenciais inválidas') {
+      res.status(401).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: 'Erro interno do servidor' });
+    }
   }
 });
 

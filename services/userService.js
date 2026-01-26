@@ -7,6 +7,7 @@ const EmailAlreadyInUseError = require('../exceptions/EmailAlreadyInUseError');
 const InvalidOrExpiredTokenError = require('../exceptions/InvalidOrExpiredTokenError');
 const UserNotFountError = require('../exceptions/UserNotFountError');
 const logger = require('../services/loggerService');
+const jwt = require('jsonwebtoken');
 
 const createUser = async ({ name, email, password, role }) => {
   logger.info('Iniciando criação de usuário', { name, email, role });
@@ -119,6 +120,34 @@ const resetPassword = async (token, newPassword) => {
   await user.save();
 };
 
+const loginUser = async ({ email, password }) => {
+  logger.info('Tentativa de login', { email });
+  try {
+    const user = await User.findOne({ where: { email } });
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      logger.warn('Falha no login: credenciais inválidas', { email });
+      throw new Error('Credenciais inválidas');
+    }
+
+    const accessToken = jwt.sign(
+      { userId: user.id, role: user.role, name: user.name },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+    const refreshToken = jwt.sign(
+      { userId: user.id, role: user.role, name: user.name },
+      process.env.JWT_SECRET,
+      { expiresIn: '3h' }
+    );
+
+    logger.info('Login bem-sucedido', { userId: user.id });
+    return { accessToken, refreshToken };
+  } catch (error) {
+    logger.error('Erro ao realizar login', { error: error.message });
+    throw error;
+  }
+};
+
 module.exports = {
   createUser,
   getUsers,
@@ -126,4 +155,5 @@ module.exports = {
   updateUser,
   createPasswordResetToken,
   resetPassword,
+  loginUser,
 };
