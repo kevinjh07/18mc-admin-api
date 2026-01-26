@@ -3,6 +3,7 @@ const { check, validationResult } = require('express-validator');
 const eventController = require('../controllers/eventController');
 const { authenticateToken, checkRole } = require('../middleware/auth');
 const router = express.Router();
+const logger = require('../services/loggerService');
 
 /**
  * @swagger
@@ -40,13 +41,18 @@ const router = express.Router();
  */
 router.post(
   '/',
+  (req, res, next) => {
+    logger.info(`Requisição recebida: POST /events`, {
+      body: req.body,
+      params: req.params,
+      query: req.query,
+    });
+    next();
+  },
   authenticateToken,
+  checkRole(['admin']),
   [
-    check('title')
-      .notEmpty()
-      .withMessage('O título do evento é obrigatório.')
-      .isLength({ max: 150 })
-      .withMessage('O título não pode ter mais de 150 caracteres.'),
+    check('title').notEmpty().withMessage('O título do evento é obrigatório.'),
     check('eventType')
       .notEmpty()
       .withMessage('O tipo do evento é obrigatório.')
@@ -80,6 +86,7 @@ router.post(
   (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      logger.warn('Erros de validação encontrados', { errors: errors.array() });
       return res.status(400).json({ errors: errors.array() });
     }
     next();

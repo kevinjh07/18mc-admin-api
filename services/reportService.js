@@ -3,74 +3,61 @@ const Event = require('../models/Event');
 const Person = require('../models/Person');
 const LatePayment = require('../models/LatePayment');
 const { Op } = require('sequelize');
+const logger = require('../services/loggerService');
 
 const generateDivisionReport = async (regionalId, startDate, endDate) => {
-  const eventWhere = { eventType: 'social_action' };
-  const divisionWhere = regionalId ? { regionalId } : {};
+  logger.info('Iniciando geração de relatório de divisões', { regionalId, startDate, endDate });
+  try {
+    const eventWhere = { eventType: 'social_action' };
+    const divisionWhere = regionalId ? { regionalId } : {};
 
-  if (startDate) {
-    eventWhere.date = { [Op.gte]: new Date(startDate) };
-  }
+    if (startDate) {
+      eventWhere.date = { [Op.gte]: new Date(startDate) };
+    }
 
-  if (endDate) {
-    eventWhere.date = { ...eventWhere.date, [Op.lte]: new Date(endDate) };
-  }
+    if (endDate) {
+      eventWhere.date = { ...eventWhere.date, [Op.lte]: new Date(endDate) };
+    }
 
-  const events = await Event.findAll({
-    where: eventWhere,
-    include: [
-      {
-        model: Division,
-        where: divisionWhere,
-        attributes: ['id', 'name'],
-      },
-      {
-        model: Person,
-        as: 'People',
-        attributes: ['id', 'shortName', 'hierarchyLevel'],
-        through: { attributes: [] },
-      },
-    ],
-    order: [['date', 'DESC']],
-  });
-
-  const divisionMap = {};
-
-  events.forEach((event) => {
-    const divisionId = event.divisionId;
-    if (!divisionMap[divisionId]) {
-      divisionMap[divisionId] = {
-        'divisionId': event.Division.id,
-        'divisionName': event.Division.name,
-        socialActions: {
-          internal: [],
-          external: [],
-          fundraising: [],
+    const events = await Event.findAll({
+      where: eventWhere,
+      include: [
+        {
+          model: Division,
+          where: divisionWhere,
+          attributes: ['id', 'name'],
         },
-      };
-    }
+        {
+          model: Person,
+          as: 'People',
+          attributes: ['id', 'shortName', 'hierarchyLevel'],
+          through: { attributes: [] },
+        },
+      ],
+      order: [['date', 'DESC']],
+    });
 
-    const actionData = {
-      id: event.id,
-      name: event.title,
-      date: event.date,
-      participants: event.People.map((participant) => ({
-        'id': participant.id,
-        'shortName': participant.shortName,
-        'hierarchyLevel': participant.hierarchyLevel,
-      })),
-    };
+    logger.info('Eventos encontrados para relatório', { count: events.length });
 
-    if (event.actionType === 'internal') {
-      divisionMap[divisionId].socialActions.internal.push(actionData);
-    } else if (event.actionType === 'external') {
-      divisionMap[divisionId].socialActions.external.push(actionData);
-    } else if (event.actionType === 'fundraising') {
-      divisionMap[divisionId].socialActions.fundraising.push(actionData);
-    }
-  });
+    const divisionMap = {};
 
-  return Object.values(divisionMap);
+    events.forEach((event) => {
+      const divisionId = event.divisionId;
+      if (!divisionMap[divisionId]) {
+        divisionMap[divisionId] = {
+          division: event.Division,
+          events: [],
+        };
+      }
+      divisionMap[divisionId].events.push(event);
+    });
+
+    logger.info('Relatório de divisões gerado com sucesso');
+    return divisionMap;
+  } catch (error) {
+    logger.error('Erro ao gerar relatório de divisões', { error: error.message });
+    throw error;
+  }
 };
 
 const getGraduationScores = async (divisionId, startDate, endDate) => {

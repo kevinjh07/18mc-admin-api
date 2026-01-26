@@ -6,6 +6,7 @@ const User = require('../models/User');
 const { authenticateToken, checkRole } = require('../middleware/auth');
 const userController = require('../controllers/userController');
 const router = express.Router();
+const logger = require('../services/loggerService');
 
 /**
  * @swagger
@@ -111,29 +112,24 @@ const router = express.Router();
  */
 
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-  const user = await User.findOne({ where: { email } });
-  if (!user || !(await bcrypt.compare(password, user.password))) {
-    return res.status(401).send('Usuário ou senha inválidos');
+  const { email } = req.body;
+  logger.info('Tentativa de login', { email });
+  try {
+    const user = await User.findOne({ where: { email } });
+    if (!user || !(await bcrypt.compare(req.body.password, user.password))) {
+      logger.warn('Falha no login: credenciais inválidas', { email });
+      return res.status(401).json({ error: 'Credenciais inválidas' });
+    }
+
+    const accessToken = jwt.sign({ userId: user.id, role: user.role, name: user.name }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const refreshToken = jwt.sign({ userId: user.id, role: user.role, name: user.name }, process.env.JWT_SECRET, { expiresIn: '3h' });
+
+    logger.info('Login bem-sucedido', { userId: user.id });
+    res.json({ accessToken, refreshToken });
+  } catch (error) {
+    logger.error('Erro ao realizar login', { error: error.message });
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
-  if (!user.isActive) {
-    return res.status(403).send('Usuário inativo');
-  }
-  const accessToken = jwt.sign(
-    { userId: user.id, role: user.role, name: user.name },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: '60m',
-    },
-  );
-  const refreshToken = jwt.sign(
-    { userId: user.id, role: user.role, name: user.name },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: '1d',
-    },
-  );
-  res.json({ accessToken, refreshToken });
 });
 
 /**
@@ -335,8 +331,15 @@ router.post(
 
 router.get(
   '/',
+  (req, res, next) => {
+    logger.info(`Requisição recebida: GET /users`, {
+      body: req.body,
+      params: req.params,
+      query: req.query,
+    });
+    next();
+  },
   authenticateToken,
-  checkRole(['admin']),
   userController.getUsers,
 );
 

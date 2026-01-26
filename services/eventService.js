@@ -2,51 +2,70 @@ const Event = require('../models/Event');
 const Division = require('../models/Division');
 const Person = require('../models/Person');
 const Regional = require('../models/Regional');
+const logger = require('../services/loggerService');
 
 const createEvent = async (event) => {
-  const { title, date, description, divisionId, eventType, actionType } = event;
+  logger.info('Iniciando criação de evento', { event });
+  try {
+    const { title, date, description, divisionId, eventType, actionType } = event;
 
-  const division = await Division.findByPk(divisionId);
-  if (!division) {
-    throw new Error('Divisão inválida');
+    const division = await Division.findByPk(divisionId);
+    if (!division) {
+      logger.warn('Divisão inválida', { divisionId });
+      throw new Error('Divisão inválida');
+    }
+
+    if (eventType === 'social_action' && !actionType) {
+      logger.warn('Tipo de ação obrigatório para eventos do tipo ação social', { eventType });
+      throw new Error('O tipo de ação (actionType) é obrigatório para eventos do tipo "ação social"');
+    }
+
+    if (eventType !== 'social_action' && actionType) {
+      logger.warn('Tipo de ação inválido para eventos que não são do tipo ação social', { eventType });
+      throw new Error('O tipo de ação (actionType) é válido apenas para eventos do tipo "ação social"');
+    }
+
+    const createdEvent = await Event.create({
+      title,
+      date,
+      description,
+      divisionId,
+      eventType,
+      actionType: eventType === 'social_action' ? actionType : null,
+    });
+    logger.info('Evento criado com sucesso', { eventId: createdEvent.id });
+    return createdEvent;
+  } catch (error) {
+    logger.error('Erro ao criar evento', { error: error.message });
+    throw error;
   }
-
-  if (eventType === 'social_action' && !actionType) {
-    throw new Error('O tipo de ação (actionType) é obrigatório para eventos do tipo "ação social"');
-  }
-
-  if (eventType !== 'social_action' && actionType) {
-    throw new Error('O tipo de ação (actionType) é válido apenas para eventos do tipo "ação social"');
-  }
-
-  return await Event.create({
-    title,
-    date,
-    description,
-    divisionId,
-    eventType,
-    actionType: eventType === 'social_action' ? actionType : null,
-  });
 };
 
 const getEventById = async (id) => {
-  return await Event.findByPk(id, {
-    include: [
-      {
-        model: Division,
-        attributes: ['id', 'name'],
-        include: {
-          model: Regional,
-          attributes: ['id', 'commandId'],
+  logger.info('Buscando evento por ID', { eventId: id });
+  try {
+    const event = await Event.findByPk(id, {
+      include: [
+        {
+          model: Division,
+          attributes: ['id', 'name'],
+          include: {
+            model: Regional,
+            attributes: ['id', 'commandId'],
+          },
         },
-      },
-      {
-        model: Person,
-        attributes: ['id', 'shortName'],
-        through: { attributes: [] },
-      },
-    ],
-  });
+      ],
+    });
+    if (!event) {
+      logger.warn('Evento não encontrado', { eventId: id });
+    } else {
+      logger.info('Evento encontrado', { eventId: id });
+    }
+    return event;
+  } catch (error) {
+    logger.error('Erro ao buscar evento por ID', { error: error.message });
+    throw error;
+  }
 };
 
 const getAllEvents = async (page, limit, regionalId, divisionId, eventType) => {

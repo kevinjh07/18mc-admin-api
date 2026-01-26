@@ -6,36 +6,53 @@ const UserAlreadyExistsError = require('../exceptions/UserAlreadyExistsError');
 const EmailAlreadyInUseError = require('../exceptions/EmailAlreadyInUseError');
 const InvalidOrExpiredTokenError = require('../exceptions/InvalidOrExpiredTokenError');
 const UserNotFountError = require('../exceptions/UserNotFountError');
+const logger = require('../services/loggerService');
 
 const createUser = async ({ name, email, password, role }) => {
-  const existingUser = await User.findOne({ where: { email } });
-  if (existingUser) {
-    throw new UserAlreadyExistsError('Usuário já cadastrado com este e-mail');
+  logger.info('Iniciando criação de usuário', { name, email, role });
+  try {
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      logger.warn('Usuário já cadastrado com este e-mail', { email });
+      throw new UserAlreadyExistsError('Usuário já cadastrado com este e-mail');
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await User.create({ name, email, password: hashedPassword, role });
+    logger.info('Usuário criado com sucesso', { userId: user.id });
+    return user;
+  } catch (error) {
+    logger.error('Erro ao criar usuário', { error: error.message });
+    throw error;
   }
-  const hashedPassword = await bcrypt.hash(password, 10);
-  return User.create({ name, email, password: hashedPassword, role });
 };
 
 const getUsers = async ({ page, limit, excludeUserId }) => {
-  const offset = (page - 1) * limit;
-  const users = await User.findAndCountAll({
-    attributes: ['id', 'email', 'name', 'isActive'],
-    limit,
-    offset,
-    order: [['createdAt', 'DESC']],
-    where: {
-      id: {
-        [Op.ne]: excludeUserId,
+  logger.info('Buscando usuários', { page, limit, excludeUserId });
+  try {
+    const offset = (page - 1) * limit;
+    const users = await User.findAndCountAll({
+      attributes: ['id', 'email', 'name', 'isActive'],
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']],
+      where: {
+        id: {
+          [Op.ne]: excludeUserId,
+        },
       },
-    },
-  });
+    });
 
-  return {
-    totalItems: users.count,
-    totalPages: Math.ceil(users.count / limit),
-    currentPage: page,
-    data: users.rows,
-  };
+    logger.info('Usuários encontrados', { count: users.count });
+    return {
+      totalItems: users.count,
+      totalPages: Math.ceil(users.count / limit),
+      currentPage: page,
+      data: users.rows,
+    };
+  } catch (error) {
+    logger.error('Erro ao buscar usuários', { error: error.message });
+    throw error;
+  }
 };
 
 const getUserById = async (id) => {
@@ -53,7 +70,7 @@ const updateUser = async ({ id, name, email, isActive }) => {
 
   const user = await User.findByPk(id);
   if (!user) {
-    throw new Error('Usuário não encontrado');
+    throw new UserNotFountError('Usuário não encontrado');
   }
 
   user.name = name;

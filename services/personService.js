@@ -5,37 +5,60 @@ const LatePayment = require('../models/LatePayment');
 const PersonAlreadyExistsError = require('../exceptions/PersonAlreadyExistsError');
 const LatePaymentAlreadyExistsError = require('../exceptions/LatePaymentAlreadyExistsError');
 const { Op } = require('sequelize');
+const logger = require('../services/loggerService');
 
 const createPerson = async (fullName, shortName, divisionId, hierarchyLevel, isActive) => {
-  const division = await Division.findByPk(divisionId, {
-    include: {
-      model: Regional,
-      attributes: ['id'],
-    },
-  });
-  if (!division) {
-    throw new Error('Divisão inválida. A divisão especificada não foi encontrada.');
-  }
+  logger.info('Iniciando criação de pessoa', { fullName, shortName, divisionId, hierarchyLevel, isActive });
+  try {
+    const division = await Division.findByPk(divisionId, {
+      include: {
+        model: Regional,
+        attributes: ['id'],
+      },
+    });
+    if (!division) {
+      logger.warn('Divisão inválida', { divisionId });
+      throw new Error('Divisão inválida. A divisão especificada não foi encontrada.');
+    }
 
-  const existingPerson = await Person.findOne({ where: { shortName, divisionId } });
-  if (existingPerson) {
-    throw new PersonAlreadyExistsError('Já existe um membro com o mesmo nome de colete e regional.');
-  }
+    const existingPerson = await Person.findOne({ where: { shortName, divisionId } });
+    if (existingPerson) {
+      logger.warn('Pessoa já existente', { shortName, divisionId });
+      throw new PersonAlreadyExistsError('Já existe um membro com o mesmo nome de colete e regional.');
+    }
 
-  return await Person.create({ fullName, shortName, divisionId, hierarchyLevel, isActive });
+    const person = await Person.create({ fullName, shortName, divisionId, hierarchyLevel, isActive });
+    logger.info('Pessoa criada com sucesso', { personId: person.id });
+    return person;
+  } catch (error) {
+    logger.error('Erro ao criar pessoa', { error: error.message });
+    throw error;
+  }
 };
 
 const getPersonById = async (id) => {
-  return await Person.findByPk(id, {
-    include: {
-      model: Division,
-      attributes: ['id', 'name'],
+  logger.info('Buscando pessoa por ID', { personId: id });
+  try {
+    const person = await Person.findByPk(id, {
       include: {
-        model: Regional,
-        attributes: ['id', 'commandId'],
+        model: Division,
+        attributes: ['id', 'name'],
+        include: {
+          model: Regional,
+          attributes: ['id', 'commandId'],
+        },
       },
-    },
-  });
+    });
+    if (!person) {
+      logger.warn('Pessoa não encontrada', { personId: id });
+    } else {
+      logger.info('Pessoa encontrada', { personId: id });
+    }
+    return person;
+  } catch (error) {
+    logger.error('Erro ao buscar pessoa por ID', { error: error.message });
+    throw error;
+  }
 };
 
 const getAllPersons = async (page, limit, divisionId) => {

@@ -3,6 +3,7 @@ const { check, validationResult } = require('express-validator');
 const regionalController = require('../controllers/regionalController');
 const { authenticateToken, checkRole } = require('../middleware/auth');
 const router = express.Router();
+const logger = require('../services/loggerService');
 
 /**
  * @swagger
@@ -33,6 +34,14 @@ const router = express.Router();
  */
 router.post(
   '/',
+  (req, res, next) => {
+    logger.info(`Requisição recebida: POST /regionals`, {
+      body: req.body,
+      params: req.params,
+      query: req.query,
+    });
+    next();
+  },
   authenticateToken,
   checkRole(['admin']),
   [
@@ -42,13 +51,13 @@ router.post(
       .isLength({ max: 100 })
       .withMessage('O nome não pode ter mais de 100 caracteres.'),
     check('commandId')
-      .optional()
       .isInt()
       .withMessage('O ID do comando deve ser um número inteiro.'),
   ],
   (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      logger.warn('Erros de validação encontrados', { errors: errors.array() });
       return res.status(400).json({ errors: errors.array() });
     }
     next();

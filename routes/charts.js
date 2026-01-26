@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const chartController = require('../controllers/chartController');
+const logger = require('../services/loggerService');
 
 /**
  * @swagger
@@ -43,7 +44,18 @@ const chartController = require('../controllers/chartController');
  *                   value:
  *                     type: integer
  */
-router.get('/', chartController.getSocialActionCountByDateRange);
+router.get(
+  '/socialActions',
+  (req, res, next) => {
+    logger.info(`Requisição recebida: GET /socialActions`, {
+      body: req.body,
+      params: req.params,
+      query: req.query,
+    });
+    next();
+  },
+  chartController.getSocialActionCountByDateRange,
+);
 
 /**
  * @swagger
@@ -94,7 +106,15 @@ router.get('/', chartController.getSocialActionCountByDateRange);
  *                           type: integer
  */
 router.get(
-  '/action-type',
+  '/socialActions/action-type',
+  (req, res, next) => {
+    logger.info(`Requisição recebida: GET /socialActions/action-type`, {
+      body: req.body,
+      params: req.params,
+      query: req.query,
+    });
+    next();
+  },
   chartController.getSocialActionInternalExternalCountByDateRange,
 );
 
@@ -142,7 +162,15 @@ router.get(
  *                     type: integer
  */
 router.get(
-  '/person-division',
+  '/socialActions/person-division',
+  (req, res, next) => {
+    logger.info(`Requisição recebida: GET /socialActions/person-division`, {
+      body: req.body,
+      params: req.params,
+      query: req.query,
+    });
+    next();
+  },
   chartController.getSocialActionsByPersonAndDivision,
 );
 

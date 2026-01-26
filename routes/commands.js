@@ -2,6 +2,7 @@ const express = require('express');
 const commandController = require('../controllers/commandController');
 const { authenticateToken, checkRole } = require('../middleware/auth');
 const router = express.Router();
+const logger = require('../services/loggerService');
 
 /**
  * @swagger
@@ -26,6 +27,18 @@ const router = express.Router();
  *                     type: string
  *                     description: Nome do comando.
  */
-router.get('/', authenticateToken, commandController.getAllCommands);
+router.get(
+  '/',
+  (req, res, next) => {
+    logger.info(`Requisição recebida: GET /commands`, {
+      body: req.body,
+      params: req.params,
+      query: req.query
+    });
+    next();
+  },
+  authenticateToken,
+  commandController.getAllCommands
+);
 
 module.exports = router;

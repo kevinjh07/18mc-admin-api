@@ -2,6 +2,7 @@ const express = require('express');
 const { check, validationResult } = require('express-validator');
 const router = express.Router();
 const reportController = require('../controllers/reportController');
+const logger = require('../services/loggerService');
 
 /**
  * @swagger
@@ -116,7 +117,18 @@ const reportController = require('../controllers/reportController');
  *       500:
  *         description: Erro ao gerar relatório
  */
-router.get('/', reportController.getDivisionReport);
+router.get(
+  '/division',
+  (req, res, next) => {
+    logger.info(`Requisição recebida: GET /reports/division`, {
+      body: req.body,
+      params: req.params,
+      query: req.query
+    });
+    next();
+  },
+  reportController.getDivisionReport
+);
 
 /**
  * @swagger

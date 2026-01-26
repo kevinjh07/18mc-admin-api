@@ -2,6 +2,7 @@ const express = require('express');
 const { check, validationResult } = require('express-validator');
 const router = express.Router();
 const personController = require('../controllers/personController');
+const logger = require('../services/loggerService');
 
 /**
  * @swagger
@@ -34,6 +35,14 @@ const personController = require('../controllers/personController');
  */
 router.post(
   '/',
+  (req, res, next) => {
+    logger.info(`Requisição recebida: POST /persons`, {
+      body: req.body,
+      params: req.params,
+      query: req.query
+    });
+    next();
+  },
   [
     check('fullName').notEmpty().withMessage('Nome Completo é obrigatório'),
     check('shortName').notEmpty().withMessage('Nome Colete é obrigatório'),
@@ -44,6 +53,7 @@ router.post(
   (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      logger.warn('Erros de validação encontrados', { errors: errors.array() });
       return res.status(400).json({ errors: errors.array() });
     }
     next();

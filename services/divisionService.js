@@ -1,19 +1,41 @@
 const Division = require('../models/Division');
 const Regional = require('../models/Regional');
 const ValidationError = require('../exceptions/ValidationError');
+const logger = require('../services/loggerService');
 
 const createDivision = async (name, regionalId) => {
-  const regional = await Regional.findByPk(regionalId);
-  if (!regional) {
-    throw new Error('Regional not found');
+  logger.info('Iniciando criação de divisão', { name, regionalId });
+  try {
+    const regional = await Regional.findByPk(regionalId);
+    if (!regional) {
+      logger.warn('Regional não encontrada', { regionalId });
+      throw new Error('Regional not found');
+    }
+    const division = await Division.create({ name, regionalId });
+    logger.info('Divisão criada com sucesso', { divisionId: division.id });
+    return division;
+  } catch (error) {
+    logger.error('Erro ao criar divisão', { error: error.message });
+    throw error;
   }
-  return await Division.create({ name, regionalId });
 };
 
 const getDivisionById = async (id) => {
-  return await Division.findByPk(id, {
-    include: { model: Regional, attributes: ['name', 'commandId'] },
-  });
+  logger.info('Buscando divisão por ID', { divisionId: id });
+  try {
+    const division = await Division.findByPk(id, {
+      include: { model: Regional, attributes: ['name', 'commandId'] },
+    });
+    if (!division) {
+      logger.warn('Divisão não encontrada', { divisionId: id });
+    } else {
+      logger.info('Divisão encontrada', { divisionId: id });
+    }
+    return division;
+  } catch (error) {
+    logger.error('Erro ao buscar divisão por ID', { error: error.message });
+    throw error;
+  }
 };
 
 const getAllDivisions = async (page, limit, regionalId) => {
